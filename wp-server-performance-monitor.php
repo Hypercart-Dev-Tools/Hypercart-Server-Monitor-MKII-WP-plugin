@@ -3,7 +3,7 @@
  * Plugin Name: Hypercart Server Monitor MKII
  * Plugin URI: https://github.com/yourusername/wp-server-performance-monitor
  * Description: Monitors server health (CPU, Memory, Disk) every 15 minutes with email alerts and admin dashboard. Requires Hypercart Helper.
- * Version: 0.1.0
+ * Version: 0.2.0
  * Author: Your Name
  * Author URI: https://hypercart.io
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ exit;
 }
 
 // Define plugin constants.
-define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.1.0' );
+define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.4.0' );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_FILE', __FILE__ );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -36,7 +36,7 @@ function hypercart_server_monitor_missing_dependency_notice() {
 <div class="notice notice-error">
 <p>
 <strong>Hypercart Server Monitor MKII</strong> requires
-<strong>Hypercart Helper v1.0.0+</strong> to be installed and active.
+<strong>Hypercart Helper v1.1.2+</strong> to be installed and active.
 <a href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>">
 Manage Plugins
 </a>
@@ -54,8 +54,8 @@ $current_version = defined( 'HYPERCART_HELPER_VERSION' ) ? HYPERCART_HELPER_VERS
 <div class="notice notice-error">
 <p>
 <strong>Hypercart Server Monitor MKII</strong> requires
-<strong>Hypercart Helper v1.0.0+</strong>
-(found v<?php echo esc_html( $current_version ); ?>).
+<strong>Hypercart Helper v1.1.2+</strong> (for Admin Tabs and Charts support).
+Currently installed: v<?php echo esc_html( $current_version ); ?>.
 </p>
 </div>
 <?php
@@ -69,14 +69,14 @@ require_once HYPERCART_SERVER_MONITOR_PLUGIN_DIR . 'autoload.php';
  */
 function hypercart_server_monitor_init() {
 // Check if required classes exist.
-if ( ! class_exists( 'Hypercart_Time' ) || ! class_exists( 'Hypercart_Logger' ) ) {
+if ( ! class_exists( 'Hypercart_Time' ) || ! class_exists( 'Hypercart_Logger' ) || ! class_exists( 'Hypercart_Admin_Tabs' ) ) {
 add_action( 'admin_notices', 'hypercart_server_monitor_missing_dependency_notice' );
 return;
 }
 
-// Check minimum version.
+// Check minimum version (1.1.2+ for Admin Tabs and Charts).
 if ( defined( 'HYPERCART_HELPER_VERSION' ) &&
-     version_compare( HYPERCART_HELPER_VERSION, '1.0.0', '<' ) ) {
+     version_compare( HYPERCART_HELPER_VERSION, '1.1.2', '<' ) ) {
 add_action( 'admin_notices', 'hypercart_server_monitor_version_mismatch_notice' );
 return;
 }

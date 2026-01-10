@@ -8,158 +8,120 @@
 namespace Hypercart_Server_Monitor\Services;
 
 /**
- * Converts raw metrics to subscores and combined score (0-100).
+ * Converts raw metrics to score (0-100).
+ *
+ * Now uses a single synthetic benchmark instead of multiple system metrics.
  */
 class ScoringService {
 	/**
-	 * Metric weights (must sum to 100).
+	 * Baseline benchmark time in milliseconds.
 	 *
-	 * @var array
+	 * This represents "good" performance. Faster = higher score, slower = lower score.
+	 *
+	 * @var float
 	 */
-	private $weights = array(
-		'cpu_load_1m_norm' => 40,
-		'mem_used_pct'     => 35,
-		'disk_free_pct'    => 25,
-	);
+	private $baseline_ms = 100.0;
 
 	/**
-	 * Calculate combined score from raw metrics.
+	 * Calculate score from benchmark metrics.
 	 *
-	 * @param array $raw_metrics Raw metric values.
-	 * @return int Combined score (0-100).
+	 * @param array $raw_metrics Raw metric values from BenchmarkCollector.
+	 * @param bool  $detailed    Whether to return detailed array or just integer.
+	 * @return int|array Score (0-100) or detailed array.
 	 */
-	public function calculate_score( $raw_metrics ) {
-		$subscores = array(
-			'cpu'  => $this->score_cpu_load( $raw_metrics['cpu_load_1m_norm'] ?? 'unknown' ),
-			'mem'  => $this->score_memory( $raw_metrics['mem_used_pct'] ?? 'unknown' ),
-			'disk' => $this->score_disk( $raw_metrics['disk_free_pct'] ?? 'unknown' ),
-		);
+	public function calculate_score( $raw_metrics, $detailed = false ) {
+		// Extract benchmark time.
+		$avg_time_ms = null;
 
-		// Calculate weighted average.
-		$total_weight = 0;
-		$weighted_sum = 0;
-
-		if ( 'unknown' !== $subscores['cpu'] ) {
-			$weighted_sum += $subscores['cpu'] * $this->weights['cpu_load_1m_norm'];
-			$total_weight += $this->weights['cpu_load_1m_norm'];
+		if ( isset( $raw_metrics['benchmark'] ) && is_array( $raw_metrics['benchmark'] ) ) {
+			// New benchmark format.
+			if ( $raw_metrics['benchmark']['supported'] ) {
+				$avg_time_ms = $raw_metrics['benchmark']['avg_time_ms'] ?? null;
+			}
 		}
 
-		if ( 'unknown' !== $subscores['mem'] ) {
-			$weighted_sum += $subscores['mem'] * $this->weights['mem_used_pct'];
-			$total_weight += $this->weights['mem_used_pct'];
-		}
+		// If no benchmark available, return 0.
+		if ( null === $avg_time_ms ) {
+			\Hypercart_Logger::warning(
+				'hypercart-server-monitor',
+				'No benchmark data available for scoring',
+				array( 'raw_metrics' => $raw_metrics )
+			);
 
-		if ( 'unknown' !== $subscores['disk'] ) {
-			$weighted_sum += $subscores['disk'] * $this->weights['disk_free_pct'];
-			$total_weight += $this->weights['disk_free_pct'];
-		}
+			if ( $detailed ) {
+				return array(
+					'combined'     => 0,
+					'benchmark_ms' => null,
+					'label'        => 'Unknown',
+				);
+			}
 
-		// If no metrics available, return 0.
-		if ( $total_weight === 0 ) {
 			return 0;
 		}
 
-		$combined = $weighted_sum / $total_weight;
+		// Calculate score based on benchmark time.
+		$score = $this->score_benchmark( $avg_time_ms );
 
 		\Hypercart_Logger::debug(
 			'hypercart-server-monitor',
-			'Score calculated',
+			'Score calculated from benchmark',
 			array(
-				'subscores' => $subscores,
-				'combined'  => $combined,
+				'avg_time_ms' => $avg_time_ms,
+				'score'       => $score,
 			)
 		);
 
-		return (int) round( $combined );
+		// Return detailed array if requested.
+		if ( $detailed ) {
+			return array(
+				'combined'     => $score,
+				'benchmark_ms' => $avg_time_ms,
+				'label'        => $this->get_score_label( $score ),
+			);
+		}
+
+		return $score;
 	}
 
 	/**
-	 * Score CPU load (normalized).
+	 * Score benchmark execution time.
 	 *
-	 * @param float|string $load Normalized load average.
-	 * @return int|string Score (0-100) or 'unknown'.
+	 * Lower execution time = higher score.
+	 * Uses baseline_ms as reference point.
+	 *
+	 * @param float $time_ms Average execution time in milliseconds.
+	 * @return int Score (0-100).
 	 */
-	private function score_cpu_load( $load ) {
-		if ( 'unknown' === $load ) {
-			return 'unknown';
-		}
+	private function score_benchmark( $time_ms ) {
+		// Scoring logic:
+		// <= baseline → 100
+		// baseline to 2x baseline → linear down to 50
+		// 2x to 4x baseline → linear down to 20
+		// > 4x baseline → 0
 
-		// <= 0.7 → 100
-		if ( $load <= 0.7 ) {
+		if ( $time_ms <= $this->baseline_ms ) {
 			return 100;
 		}
 
-		// 0.7-1.0 → linear down to 70
-		if ( $load <= 1.0 ) {
-			return (int) round( 100 - ( ( $load - 0.7 ) / 0.3 ) * 30 );
+		$double_baseline = $this->baseline_ms * 2;
+		if ( $time_ms <= $double_baseline ) {
+			// Linear from 100 to 50.
+			$ratio = ( $time_ms - $this->baseline_ms ) / $this->baseline_ms;
+			return (int) round( 100 - ( $ratio * 50 ) );
 		}
 
-		// 1.0-2.0 → linear down to 20
-		if ( $load <= 2.0 ) {
-			return (int) round( 70 - ( ( $load - 1.0 ) / 1.0 ) * 50 );
+		$quad_baseline = $this->baseline_ms * 4;
+		if ( $time_ms <= $quad_baseline ) {
+			// Linear from 50 to 20.
+			$ratio = ( $time_ms - $double_baseline ) / ( $double_baseline );
+			return (int) round( 50 - ( $ratio * 30 ) );
 		}
 
-		// > 2.0 → 0
-		return 0;
-	}
-
-	/**
-	 * Score memory usage percentage.
-	 *
-	 * @param float|string $used_pct Memory used percentage.
-	 * @return int|string Score (0-100) or 'unknown'.
-	 */
-	private function score_memory( $used_pct ) {
-		if ( 'unknown' === $used_pct ) {
-			return 'unknown';
+		// Very slow, but give some points for completing.
+		if ( $time_ms <= $this->baseline_ms * 10 ) {
+			return 10;
 		}
 
-		// <= 70% → 100
-		if ( $used_pct <= 70 ) {
-			return 100;
-		}
-
-		// 70-85% → linear down to 60
-		if ( $used_pct <= 85 ) {
-			return (int) round( 100 - ( ( $used_pct - 70 ) / 15 ) * 40 );
-		}
-
-		// 85-95% → linear down to 20
-		if ( $used_pct <= 95 ) {
-			return (int) round( 60 - ( ( $used_pct - 85 ) / 10 ) * 40 );
-		}
-
-		// > 95% → 0
-		return 0;
-	}
-
-	/**
-	 * Score disk free space percentage.
-	 *
-	 * @param float|string $free_pct Disk free percentage.
-	 * @return int|string Score (0-100) or 'unknown'.
-	 */
-	private function score_disk( $free_pct ) {
-		if ( 'unknown' === $free_pct ) {
-			return 'unknown';
-		}
-
-		// >= 20% → 100
-		if ( $free_pct >= 20 ) {
-			return 100;
-		}
-
-		// 10-20% → linear down to 50
-		if ( $free_pct >= 10 ) {
-			return (int) round( 50 + ( ( $free_pct - 10 ) / 10 ) * 50 );
-		}
-
-		// 5-10% → linear down to 20
-		if ( $free_pct >= 5 ) {
-			return (int) round( 20 + ( ( $free_pct - 5 ) / 5 ) * 30 );
-		}
-
-		// < 5% → 0
 		return 0;
 	}
 

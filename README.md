@@ -436,35 +436,45 @@ Show at minimum:
 
 ## 9. Email Reporting
 
-### Email content (every run)
+### Email Requirements (Phase 5)
 
-Subject format (includes composite score for at-a-glance visibility):
+**Dynamic Subject Line** - Score must be visible at a glance:
 
-* `[WP Server Monitor] Health Score: 82 — CPU 0.63 | MEM 71.2% | DISK 28.4%`
+* Format: `[Server Monitor] Score: 100 (Excellent) | Benchmark: 36.5ms`
 * Score ranges:
-  * 90-100: "Excellent (95)"
-  * 75-89: "Good (82)"
-  * 60-74: "Warning (68)"
-  * Below 60: "Critical (45)"
+  * 90-100: "Excellent"
+  * 75-89: "Good"
+  * 60-74: "Warning"
+  * Below 60: "Critical"
+
+**Manual Test Email Button:**
+* Located in Admin UI (Dashboard or new Email tab)
+* Button: "Send Test Email"
+* Sends email with **most recently saved** benchmark score and metrics from JSON file
+* Does NOT run new benchmark (uses existing data)
+* Useful for testing email configuration without waiting for cron
 
 Example subjects:
-* `[WP Server Monitor] Health Score: Excellent (95) — CPU 0.45 | MEM 62.1% | DISK 35.2%`
-* `[WP Server Monitor] Health Score: Warning (68) — CPU 1.23 | MEM 88.5% | DISK 12.3%`
+* `[Server Monitor] Score: 100 (Excellent) | Benchmark: 36.5ms`
+* `[Server Monitor] Score: 68 (Warning) | Benchmark: 285.3ms`
+* `[Server Monitor] Score: 45 (Critical) | Benchmark: 512.7ms`
 
 Body includes:
 
+* Site name and URL
 * UTC timestamp and local timestamp (using `Hypercart_Time::format()`)
 * Combined score with label
-* Raw metrics (detailed breakdown)
-* Any warnings (e.g. unsupported metric collector fallback)
+* Benchmark metrics (avg/min/max/iterations)
 * Link to admin dashboard
+* Footer with plugin version
 
 Implementation notes:
 
-* Use `wp_mail()`
-* Recipient configurable (default: site admin email)
+* Use `wp_mail()` with HTML email format
+* Recipient configurable (default: site admin email from `get_option('admin_email')`)
 * Ensure email sending happens after JSON write (so the JSON remains SOT)
-* Subject line must include composite score for inbox scanning
+* Subject line must include score and benchmark time for inbox scanning
+* FSM state: `writing` → `emailing` → `completed`
 
 ---
 

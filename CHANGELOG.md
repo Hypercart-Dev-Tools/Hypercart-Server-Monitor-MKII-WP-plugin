@@ -5,6 +5,258 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-01-10
+
+### Added - Phase 5: Email Notifications
+
+**Email notifications are now sent automatically after each benchmark run!**
+
+#### EmailService
+- **New Service**: `src/Services/EmailService.php`
+- **Dynamic Subject Line**: `[Server Monitor] Score: 100 (Excellent) | Benchmark: 36.5ms`
+  - Score and benchmark time visible at a glance in inbox
+  - Color-coded score labels (Excellent/Good/Warning/Critical)
+- **HTML Email Body**:
+  - Site name and URL
+  - Large score display with color coding
+  - Benchmark details (avg/min/max/iterations)
+  - UTC and local timestamps
+  - Link to admin dashboard
+  - Plugin version in footer
+- **Recipient**: Uses `get_option('admin_email')` (configurable in future)
+- **Logging**: All email sends logged via `Hypercart_Logger`
+
+#### FSM Integration
+- **New State**: `emailing` added to FSM workflow
+- **Flow**: `writing` → `emailing` → `completed`
+- **Error Handling**: Email failures logged but don't stop workflow
+- **Location**: `Plugin::run_monitoring()` lines 177-188
+
+#### Manual Test Email
+- **New Tab**: "Email" tab in admin UI
+- **Button**: "Send Test Email" sends most recent saved benchmark
+- **No New Benchmark**: Uses existing data from JSON file
+- **AJAX Handler**: `ajax_send_test_email()` in `AdminController`
+- **Validation**: Checks for existing data before sending
+- **Feedback**: Success/error messages with recipient confirmation
+
+#### Files Added
+- `src/Services/EmailService.php` - Email formatting and sending
+- `src/Admin/views/tab-email.php` - Email tab UI with test button
+
+#### Files Modified
+- `src/Plugin.php` - Added email sending to FSM workflow
+- `src/Admin/AdminController.php` - Added Email tab and AJAX handler
+- `README.md` - Documented email requirements
+
+### Benefits
+- ✅ Instant notification of performance issues
+- ✅ Score visible in subject line (no need to open email)
+- ✅ Test email functionality for debugging SMTP
+- ✅ FSM-first approach (email after JSON write)
+- ✅ Non-blocking (email failures don't stop monitoring)
+
+---
+
+## [0.3.0] - 2026-01-10
+
+### Changed - Simplified to Single Synthetic Benchmark
+
+**BREAKING CHANGE**: Replaced system-specific metrics (CPU, Memory, Disk) with a single synthetic PHP performance benchmark.
+
+### Fixed
+- **Score Storage Bug**: Fixed `Plugin::run_monitoring()` to save detailed score array (with `combined`, `label`, `benchmark_ms`) instead of just integer
+- **UI Clarity**: Added "↓ lower is better" indicator next to benchmark time in dashboard and manual test views
+- **Logging**: Enhanced logging to show score, label, and benchmark time separately for better debugging
+
+#### Rationale
+- System metrics (especially Memory) are not supported on all environments (e.g., macOS Local)
+- Multiple metric types multiplied complexity unnecessarily
+- Single benchmark provides universal compatibility and simpler framework for testing scheduling/email features
+
+#### New Benchmark System
+- **BenchmarkCollector**: Runs 3 iterations of compute-intensive PHP tasks
+  - Mathematical operations (50,000 iterations of sqrt/sin/cos)
+  - String operations (10,000 MD5 hashes with substring management)
+  - Array operations (10,000 elements with sort/filter/map/reduce)
+- **Scoring**: Based on average execution time (lower = better)
+  - ≤100ms → Score 100
+  - 100-200ms → Linear 100-50
+  - 200-400ms → Linear 50-20
+  - >400ms → Score 0-10
+- **Metrics Returned**:
+  - `avg_time_ms`: Average execution time
+  - `min_time_ms`: Fastest run
+  - `max_time_ms`: Slowest run
+  - `iterations`: Number of runs (3)
+  - `all_times_ms`: Array of all run times
+
+#### Updated Components
+- **ScoringService**: Simplified to single `score_benchmark()` method
+- **Plugin::collect_metrics()**: Now uses only `BenchmarkCollector`
+- **AdminController**: Updated for single metric
+- **Dashboard Tab**: Shows benchmark details (avg/min/max/iterations)
+- **Manual Test Tab**: Shows benchmark execution times instead of system metrics
+- **Removed Files**: `CpuLoadCollector.php`, `MemoryCollector.php`, `DiskCollector.php` (deprecated)
+
+#### Benefits
+- ✅ Works on ALL environments (Local, staging, production, any OS)
+- ✅ Consistent, reproducible results
+- ✅ Simpler codebase (1 collector vs 3)
+- ✅ Focus on framework reliability (scheduling, FSM, email)
+- ✅ No platform-specific edge cases
+
+---
+
+## [0.2.0] - 2026-01-10
+
+### Fixed
+- **Manual Test Runner**: Now properly handles unsupported metrics and displays results reliably
+  - **CRITICAL FIX**: `ScoringService::calculate_score()` now supports detailed output format
+    - Added `$detailed` parameter to return array with `combined`, `cpu`, `memory`, `disk`, `label`
+    - Handles both old flat format and new nested collector format
+    - AdminController now requests detailed format for proper display
+  - Added "Status" column to metrics table showing "Supported" or "Not Supported"
+  - Displays warnings for unsupported metrics at top of results
+  - Shows logging status confirmation ("Test logged to Hypercart logs")
+  - Gracefully handles missing metric values with fallback to 0 or "—"
+  - Logs manual test start/completion to Hypercart logs for debugging
+  - Error messages now show logging status
+  - **Enhanced Debugging**:
+    - Added console logging for all AJAX responses
+    - Validates score and metrics data before rendering
+    - Try-catch block around HTML building to catch JavaScript errors
+    - Logs collected metrics at DEBUG level for troubleshooting
+    - Validates scoring service response and throws exception if invalid
+    - Better error messages with browser console guidance
+
+### Added - Phase 4: Admin UI with Tabbed Navigation
+
+#### Admin Controller (`AdminController`)
+- New `AdminController` class using `Hypercart_Admin_Tabs` helper
+- Top-level admin menu page with "Server Monitor" label
+- Dashicons icon: `dashicons-performance`
+- Four-tab interface: Dashboard, Manual Test, Logs, Debug
+- AJAX endpoint for manual test runner
+- Asset enqueuing for admin CSS/JS and Hypercart Charts
+
+#### Dashboard Tab
+- **Current Health Score Display**
+  - Large score number (0-100) with color-coded background
+  - Score label: Excellent (90+), Good (75-89), Warning (60-74), Critical (<60)
+  - Last updated timestamp in site timezone
+- **Metric Breakdown Table**
+  - CPU Load (raw value + score)
+  - Memory Usage (percentage + score)
+  - Disk Free (percentage + score)
+- **Health Score Chart (24 Hours)**
+  - Time-series chart using `Hypercart_Charts`
+  - Interactive hover tooltips
+  - Automatic timezone conversion
+- **Recent Samples Table**
+  - Last 10 samples in reverse chronological order
+  - Timestamp, score, label, CPU, memory, disk columns
+
+#### Manual Test Tab
+- **Run Test Now Button**
+  - Executes monitoring without saving to database
+  - Real-time AJAX results display
+  - Shows score, metrics breakdown, duration
+  - Does NOT affect FSM state or trigger emails
+- **Test Results Display**
+  - Color-coded score display
+  - Metrics table with raw values and scores
+  - Completion timestamp and duration
+- **Info Panel**
+  - Explains manual test behavior
+  - Lists what manual tests do NOT do
+
+#### Logs Tab
+- **Log File Selector**
+  - Dropdown with all available log files
+  - Shows filename and file size
+  - Auto-submit on selection
+- **Log Level Filtering**
+  - Filter buttons: All, Debug, Info, Warning, Error
+  - Real-time client-side filtering
+  - Active button highlighting
+- **Log Content Display**
+  - Reverse chronological order (newest first)
+  - Color-coded by level (ERROR=red, WARNING=yellow, INFO=cyan, DEBUG=blue)
+  - Dark theme code editor styling
+  - Only shows logs from this plugin
+  - Scrollable container (max 600px height)
+- **Info Panel**
+  - Log file location
+  - Naming convention
+  - Display order explanation
+
+#### Debug Tab
+- **FSM State Panel**
+  - Current state
+  - Last updated timestamp
+  - Failure count (color-coded: red if ≥3)
+  - Last error message
+  - Last run timestamp
+  - Last duration in milliseconds
+- **Cron Status Panel**
+  - Scheduled status (Yes/No)
+  - Next run timestamp (site timezone)
+  - Hook name
+  - Interval name
+- **Lock Status Panel**
+  - Locked status (Yes/No)
+  - Acquired at timestamp
+  - Lock age in seconds
+- **File Status Panel**
+  - JSON file path
+  - Exists status
+  - Writable status
+  - File size in KB
+  - Sample count
+  - Oldest/newest sample timestamps
+
+#### Assets
+- **admin.css**
+  - Card-based layout
+  - Color-coded score displays
+  - Responsive metrics tables
+  - Dark theme log viewer
+  - Status indicators (ok/warning/error)
+  - Button styling
+- **admin.js**
+  - Placeholder for future enhancements
+  - jQuery-based
+
+### Changed
+- **Minimum Hypercart Helper Version**: Now requires v1.1.2+ (for `Hypercart_Admin_Tabs` and `Hypercart_Charts`)
+- **Plugin Version**: Bumped to 0.2.0
+- **Settings Link**: Changed from "Settings" to "Dashboard" and updated URL to new admin page
+- **Admin Menu**: Moved from Tools submenu to top-level menu with custom icon
+
+### Technical Details
+- **New Files**:
+  - `src/Admin/AdminController.php`
+  - `src/Admin/views/tab-dashboard.php`
+  - `src/Admin/views/tab-manual-test.php`
+  - `src/Admin/views/tab-logs.php`
+  - `src/Admin/views/tab-debug.php`
+  - `assets/admin.css`
+  - `assets/admin.js`
+- **Modified Files**:
+  - `src/Plugin.php` - Added AdminController initialization
+  - `wp-server-performance-monitor.php` - Updated version and dependency checks
+- **AJAX Actions**:
+  - `hsm_run_manual_test` - Manual test runner endpoint
+- **Capabilities**: All admin pages require `manage_options`
+
+### Dependencies
+- WordPress 5.8+
+- PHP 7.4+
+- **Hypercart Helper 1.1.2+** (updated from 1.0.0)
+
+---
+
 ## [0.1.0] - 2026-01-10
 
 ### Added - First Iteration (Phases 0-3)
@@ -129,19 +381,15 @@ wp-server-performance-monitor/
 ## [Unreleased]
 
 ### Planned Features
-- Admin dashboard with real-time metrics
-- Manual test runner (run without logging)
-- Today's log viewer (parse and display logs)
-- Debug panel with file inspection
-- Email notifications with score in subject
-- Self-test diagnostics
+- Email notifications with score in subject (Phase 5)
+- Self-test diagnostics (Phase 6)
 - Export/import settings
 - Dashboard widget (optional)
 - Admin bar indicator (optional)
 
 ---
 
-**Version:** 0.1.0  
-**Date:** 2026-01-10  
-**Status:** First iteration complete (Phases 0-3)
+**Version:** 0.4.0
+**Date:** 2026-01-10
+**Status:** Phase 5 complete - Email notifications with dynamic subject line and manual test button
 

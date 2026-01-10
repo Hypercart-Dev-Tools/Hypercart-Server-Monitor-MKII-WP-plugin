@@ -33,6 +33,13 @@ class Plugin {
 	private $state_store;
 
 	/**
+	 * Admin controller.
+	 *
+	 * @var Admin\AdminController|null
+	 */
+	private $admin_controller;
+
+	/**
 	 * Get plugin instance (singleton).
 	 *
 	 * @return Plugin
@@ -60,6 +67,13 @@ class Plugin {
 
 		// Initialize scheduler.
 		$this->scheduler = new Services\SchedulerService( $this->state_store );
+
+		// Initialize admin controller (if in admin).
+		if ( is_admin() ) {
+			$repository             = new Persistence\HealthRepository();
+			$this->admin_controller = new Admin\AdminController( $this->state_store, $repository );
+			$this->admin_controller->init();
+		}
 
 		// Register hooks.
 		$this->register_hooks();
@@ -89,9 +103,6 @@ class Plugin {
 			'plugin_action_links_' . HYPERCART_SERVER_MONITOR_PLUGIN_BASENAME,
 			array( $this, 'add_settings_link' )
 		);
-
-		// Admin menu.
-		add_action( 'admin_menu', array( $this, 'register_admin_menu' ) );
 	}
 
 	/**
@@ -139,9 +150,9 @@ class Plugin {
 			// Collect metrics.
 			$raw_metrics = $this->collect_metrics();
 
-			// Calculate score.
+			// Calculate score (detailed format for storage).
 			$scorer = new Services\ScoringService();
-			$score  = $scorer->calculate_score( $raw_metrics );
+			$score  = $scorer->calculate_score( $raw_metrics, true );
 
 			// Transition to writing state.
 			$this->state_store->transition_to( 'writing' );
@@ -162,6 +173,21 @@ class Plugin {
 				throw new \Exception( 'Failed to write JSON' );
 			}
 
+			// Transition to emailing state.
+			$this->state_store->transition_to( 'emailing' );
+
+			// Send email notification.
+			$email_service = new Services\EmailService();
+			$email_sent    = $email_service->send_notification( $sample );
+
+			if ( ! $email_sent ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Email notification failed, but continuing',
+					array()
+				);
+			}
+
 			// Transition to completed state.
 			$duration_ms = ( \Hypercart_Time::now() - $start_time ) * 1000;
 			$this->state_store->transition_to(
@@ -179,8 +205,10 @@ class Plugin {
 				'hypercart-server-monitor',
 				'Monitoring task completed successfully',
 				array(
-					'score'       => $score,
-					'duration_ms' => $duration_ms,
+					'score'          => $score['combined'],
+					'score_label'    => $score['label'],
+					'benchmark_ms'   => $score['benchmark_ms'] ?? null,
+					'duration_ms'    => $duration_ms,
 				)
 			);
 
@@ -204,25 +232,17 @@ class Plugin {
 	}
 
 	/**
-	 * Collect all metrics.
+	 * Collect benchmark metrics.
 	 *
-	 * @return array Raw metrics.
+	 * @return array Benchmark metrics.
 	 */
 	private function collect_metrics() {
-		$collectors = array(
-			new Metrics\CpuLoadCollector(),
-			new Metrics\MemoryCollector(),
-			new Metrics\DiskCollector(),
+		$benchmark_collector = new Metrics\BenchmarkCollector();
+		$benchmark_data      = $benchmark_collector->collect();
+
+		return array(
+			'benchmark' => $benchmark_data,
 		);
-
-		$metrics = array();
-
-		foreach ( $collectors as $collector ) {
-			$name           = $collector->get_name();
-			$metrics[ $name ] = $collector->collect();
-		}
-
-		return $metrics;
 	}
 
 	/**
@@ -234,34 +254,11 @@ class Plugin {
 	public function add_settings_link( $links ) {
 		$settings_link = sprintf(
 			'<a href="%s">%s</a>',
-			esc_url( admin_url( 'tools.php?page=hypercart-server-monitor' ) ),
-			esc_html__( 'Settings', 'hypercart-server-monitor' )
+			esc_url( admin_url( 'admin.php?page=hypercart-server-monitor' ) ),
+			esc_html__( 'Dashboard', 'hypercart-server-monitor' )
 		);
 		array_unshift( $links, $settings_link );
 		return $links;
-	}
-
-	/**
-	 * Register admin menu.
-	 */
-	public function register_admin_menu() {
-		add_management_page(
-			__( 'Hypercart Server Monitor', 'hypercart-server-monitor' ),
-			__( 'Server Monitor', 'hypercart-server-monitor' ),
-			'manage_options',
-			'hypercart-server-monitor',
-			array( $this, 'render_admin_page' )
-		);
-	}
-
-	/**
-	 * Render admin page (placeholder for Phase 4).
-	 */
-	public function render_admin_page() {
-		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'Hypercart Server Monitor', 'hypercart-server-monitor' ) . '</h1>';
-		echo '<p>' . esc_html__( 'Admin UI coming in Phase 4...', 'hypercart-server-monitor' ) . '</p>';
-		echo '</div>';
 	}
 
 	/**

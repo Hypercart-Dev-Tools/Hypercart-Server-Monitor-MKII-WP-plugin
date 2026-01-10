@@ -1,8 +1,8 @@
 # Hypercart Helper API Integration Guide
 
-**Version:** 1.1.0  
+**Version:** 1.1.4  
 **Last Updated:** 2026-01-10  
-**Audience:** Plugin developers consuming Hypercart Helper utilities
+**Audience:** Plugin developers and LLMs consuming Hypercart Helper utilities
 
 ---
 
@@ -31,9 +31,110 @@
   - [Hooks & Filters](#charts-hooks-filters)
   - [Demo JSON File](#charts-demo-json-file)
   - [Implementation Notes / Caveats](#charts-implementation-notes-caveats)
+- [Hypercart_Markdown_Viewer API](#hypercart_markdown_viewer-api)
+  - [Shortcode](#markdown-shortcode)
+  - [PHP Usage](#markdown-php-usage)
+  - [Security Model](#markdown-security-model)
+  - [Hooks & Filters](#markdown-hooks-filters)
+- [Admin UI Helpers](#admin-ui-helpers)
+  - [Tabbed Navigation (Hypercart_Admin_Tabs)](#tabbed-navigation-hypercart_admin_tabs)
 - [WordPress Hooks](#wordpress-hooks)
 - [Best Practices](#best-practices)
 - [Examples](#examples)
+
+---
+
+## Admin UI Helpers
+
+### Tabbed Navigation (`Hypercart_Admin_Tabs`)
+
+Use this helper to render a WordPress-style tab strip (`nav-tab-wrapper`) with Dashicons, active tab highlighting, and optional color accents.
+
+**Key behaviors**
+
+- Active tab is read from `$_GET['tab']` (sanitized) with a configurable default.
+- Each tab supports: `id`, `label`, `icon`, `capability`, and `render_callback`.
+- Additional tabs can be injected via filters.
+
+**Usage**
+
+1) Enqueue assets (on the relevant admin screen):
+
+```php
+Hypercart_Admin_Tabs::enqueue_assets();
+```
+
+2) Render tabs + content:
+
+```php
+Hypercart_Admin_Tabs::render( 'my-plugin-page-slug', array(
+    'default_tab' => 'settings',
+    'tabs' => array(
+        array(
+            'id' => 'settings',
+            'label' => __( 'Settings', 'my-plugin' ),
+            'icon' => 'dashicons-admin-generic',
+            'capability' => 'manage_options',
+            'render_callback' => array( __CLASS__, 'render_tab_settings' ),
+        ),
+        // ... more tabs
+    ),
+) );
+```
+
+3) Optionally add tabs via filters:
+
+- Filter name: `hypercart_admin_tabs_{page_slug}_tabs`
+
+---
+
+## Hypercart_Markdown_Viewer API
+
+**Since:** 1.1.3
+
+**Purpose:** Safely render a subset of Markdown to HTML (no raw HTML passthrough) and provide a shortcode for editors.
+
+**Minimum Helper Version:** `v1.1.3+`
+
+### Markdown Shortcode
+
+Render a markdown file under `WP_CONTENT_DIR`:
+
+```text
+[hypercart_markdown file="plugins/hypercart-helper/README.md" title="Docs" cache_ttl="300"]
+```
+
+Or render inline markdown:
+
+```text
+[hypercart_markdown]# Title
+
+A **bold** word.[/hypercart_markdown]
+```
+
+### Markdown PHP Usage
+
+```php
+echo Hypercart_Markdown_Viewer::render_markdown( "# Title\n\nHello **world**." );
+echo Hypercart_Markdown_Viewer::render_file( 'plugins/my-plugin/docs/help.md', array( 'cache_ttl' => 300 ) );
+```
+
+### Markdown Security Model
+
+- Relative `file` paths are interpreted under `WP_CONTENT_DIR`.
+- Only `.md` and `.markdown` files are allowed.
+- Allowed base directories can be customized via:
+  - Filter: `hypercart_markdown_viewer_allowed_base_dirs`
+- Final allow/deny can be overridden via:
+  - Filter: `hypercart_markdown_viewer_allow_file`
+
+### Markdown Hooks & Filters
+
+- Action: `hypercart_markdown_viewer_init`
+- Filter: `hypercart_markdown_viewer_markdown`
+- Filter: `hypercart_markdown_viewer_allowed_tags`
+- Filter: `hypercart_markdown_viewer_html`
+- Action: `hypercart_markdown_viewer_rendered`
 
 ---
 
@@ -580,6 +681,7 @@ This plugin is intentionally small and exposes integration points primarily thro
 
 - The logger action: `hypercart_log`
 - Chart helper hooks/filters: `hypercart_charts_*`
+- Markdown Viewer hooks/filters: `hypercart_markdown_viewer_*`
 
 Additional hooks may exist in other helper classes; search the source for `apply_filters( 'hypercart_` and `do_action( 'hypercart_`.
 
