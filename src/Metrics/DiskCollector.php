@@ -2,10 +2,10 @@
 /**
  * Disk Collector
  *
- * @package WP_Server_Monitor
+ * @package Hypercart_Server_Monitor
  */
 
-namespace WP_Server_Monitor\Metrics;
+namespace Hypercart_Server_Monitor\Metrics;
 
 /**
  * Collects disk free space percentage.
@@ -19,7 +19,7 @@ class DiskCollector implements MetricsCollectorInterface {
 	public function collect() {
 		if ( ! $this->is_supported() ) {
 			\Hypercart_Logger::warning(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Disk collection not supported',
 				array()
 			);
@@ -33,7 +33,7 @@ class DiskCollector implements MetricsCollectorInterface {
 
 		if ( false === $free || false === $total || $total <= 0 ) {
 			\Hypercart_Logger::warning(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Failed to get disk space',
 				array( 'path' => $path )
 			);
@@ -43,7 +43,7 @@ class DiskCollector implements MetricsCollectorInterface {
 		$free_pct = ( $free / $total ) * 100;
 
 		\Hypercart_Logger::debug(
-			'wp-server-monitor',
+			'hypercart-server-monitor',
 			'Disk space collected',
 			array(
 				'path'      => $path,

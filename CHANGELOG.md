@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to WP Server Performance Monitor will be documented in this file.
+All notable changes to Hypercart Server Monitor MKII will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -68,14 +68,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Lock release in finally block
 
 ### Technical Details
-- **Plugin Slug:** `wp-server-monitor`
-- **Namespace:** `WP_Server_Monitor`
-- **JSON File:** `wp-content/uploads/wp-server-monitor/health-data.json`
+- **Plugin Name:** `Hypercart Server Monitor MKII`
+- **Plugin Slug:** `hypercart-server-monitor`
+- **Namespace:** `Hypercart_Server_Monitor`
+- **Text Domain:** `hypercart-server-monitor`
+- **JSON File:** `wp-content/uploads/hypercart-server-monitor/health-data.json`
 - **Log Files:** `wp-content/hypercart-logs/hypercart-YYYY-MM-DD.log`
-- **Cron Hook:** `wp_server_monitor_run`
+- **Cron Hook:** `hypercart_server_monitor_run`
 - **Cron Interval:** `every_15_minutes` (900 seconds)
-- **State Option:** `wp_server_monitor_state`
-- **Lock Transient:** `wp_server_monitor_lock`
+- **State Option:** `hypercart_server_monitor_state`
+- **Lock Transient:** `hypercart_server_monitor_lock`
 
 ### Dependencies
 - WordPress 5.8+

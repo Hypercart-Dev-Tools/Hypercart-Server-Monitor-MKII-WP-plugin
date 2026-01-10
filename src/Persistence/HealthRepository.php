@@ -2,10 +2,10 @@
 /**
  * Health Repository
  *
- * @package WP_Server_Monitor
+ * @package Hypercart_Server_Monitor
  */
 
-namespace WP_Server_Monitor\Persistence;
+namespace Hypercart_Server_Monitor\Persistence;
 
 /**
  * Manages JSON file persistence for health data.
@@ -33,7 +33,7 @@ class HealthRepository {
 	 */
 	private function get_data_dir() {
 		$upload_dir = wp_upload_dir();
-		return trailingslashit( $upload_dir['basedir'] ) . 'wp-server-monitor';
+		return trailingslashit( $upload_dir['basedir'] ) . 'hypercart-server-monitor';
 	}
 
 	/**
@@ -59,7 +59,7 @@ class HealthRepository {
 
 		if ( ! wp_mkdir_p( $dir ) ) {
 			\Hypercart_Logger::error(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Failed to create data directory',
 				array( 'dir' => $dir )
 			);
@@ -73,7 +73,7 @@ class HealthRepository {
 		}
 
 		\Hypercart_Logger::info(
-			'wp-server-monitor',
+			'hypercart-server-monitor',
 			'Data directory created',
 			array( 'dir' => $dir )
 		);
@@ -96,7 +96,7 @@ class HealthRepository {
 		$content = file_get_contents( $file_path );
 		if ( false === $content ) {
 			\Hypercart_Logger::error(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Failed to read JSON file',
 				array( 'file' => $file_path )
 			);
@@ -131,7 +131,7 @@ class HealthRepository {
 		$json = wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 		if ( false === $json ) {
 			\Hypercart_Logger::error(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Failed to encode JSON',
 				array()
 			);
@@ -142,7 +142,7 @@ class HealthRepository {
 		$written = file_put_contents( $tmp_path, $json, LOCK_EX );
 		if ( false === $written ) {
 			\Hypercart_Logger::error(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Failed to write temporary file',
 				array( 'file' => $tmp_path )
 			);
@@ -152,7 +152,7 @@ class HealthRepository {
 		// Atomic rename.
 		if ( ! rename( $tmp_path, $file_path ) ) {
 			\Hypercart_Logger::error(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Failed to rename temporary file',
 				array(
 					'from' => $tmp_path,
@@ -163,7 +163,7 @@ class HealthRepository {
 		}
 
 		\Hypercart_Logger::debug(
-			'wp-server-monitor',
+			'hypercart-server-monitor',
 			'JSON file written',
 			array(
 				'file'         => $file_path,
@@ -222,7 +222,7 @@ class HealthRepository {
 		$removed_count = count( $samples ) - count( $pruned );
 		if ( $removed_count > 0 ) {
 			\Hypercart_Logger::debug(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Pruned old samples',
 				array(
 					'removed' => $removed_count,
@@ -257,7 +257,7 @@ class HealthRepository {
 
 		if ( rename( $file_path, $bad_path ) ) {
 			\Hypercart_Logger::error(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Corrupted JSON file archived',
 				array(
 					'original' => $file_path,
@@ -266,7 +266,7 @@ class HealthRepository {
 			);
 		} else {
 			\Hypercart_Logger::error(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Failed to archive corrupted file',
 				array( 'file' => $file_path )
 			);

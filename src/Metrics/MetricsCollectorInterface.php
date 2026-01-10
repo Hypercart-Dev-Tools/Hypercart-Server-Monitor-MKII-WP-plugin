@@ -2,10 +2,10 @@
 /**
  * Metrics Collector Interface
  *
- * @package WP_Server_Monitor
+ * @package Hypercart_Server_Monitor
  */
 
-namespace WP_Server_Monitor\Metrics;
+namespace Hypercart_Server_Monitor\Metrics;
 
 /**
  * Interface for metric collectors.

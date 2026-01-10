@@ -1,5 +1,5 @@
-=== WP Server Performance Monitor ===
-Contributors: yourusername
+=== Hypercart Server Monitor MKII ===
+Contributors: hypercart
 Tags: monitoring, performance, server, health, metrics
 Requires at least: 5.8
 Tested up to: 6.4
@@ -12,7 +12,7 @@ Monitors server health (CPU, Memory, Disk) every 15 minutes with email alerts an
 
 == Description ==
 
-WP Server Performance Monitor is a lightweight plugin that continuously monitors your server's health by tracking three key metrics:
+Hypercart Server Monitor MKII is a lightweight plugin that continuously monitors your server's health by tracking three key metrics:
 
 * **CPU Load** - 1-minute load average, normalized by CPU cores
 * **Memory Usage** - Percentage of RAM used
@@ -57,7 +57,7 @@ This is the first iteration with core functionality:
 == Installation ==
 
 1. Install and activate **Hypercart Helper** plugin (required dependency)
-2. Upload the plugin files to `/wp-content/plugins/wp-server-performance-monitor/`
+2. Upload the plugin files to `/wp-content/plugins/Hypercart-Server-Monitor-MKII/`
 3. Activate the plugin through the 'Plugins' menu in WordPress
 4. The plugin will automatically start monitoring every 15 minutes
 
@@ -73,7 +73,7 @@ Every 15 minutes via WP-Cron.
 
 = Where is the data stored? =
 
-Metrics are stored in a JSON file at `wp-content/uploads/wp-server-monitor/health-data.json`. Logs are stored in `wp-content/hypercart-logs/` via Hypercart_Logger.
+Metrics are stored in a JSON file at `wp-content/uploads/hypercart-server-monitor/health-data.json`. Logs are stored in `wp-content/hypercart-logs/` via Hypercart_Logger.
 
 = How long is data retained? =
 

@@ -2,10 +2,10 @@
 /**
  * CPU Load Collector
  *
- * @package WP_Server_Monitor
+ * @package Hypercart_Server_Monitor
  */
 
-namespace WP_Server_Monitor\Metrics;
+namespace Hypercart_Server_Monitor\Metrics;
 
 /**
  * Collects CPU load average (1-minute, normalized by cores).
@@ -19,7 +19,7 @@ class CpuLoadCollector implements MetricsCollectorInterface {
 	public function collect() {
 		if ( ! $this->is_supported() ) {
 			\Hypercart_Logger::warning(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'CPU load collection not supported',
 				array()
 			);
@@ -29,7 +29,7 @@ class CpuLoadCollector implements MetricsCollectorInterface {
 		$load = sys_getloadavg();
 		if ( false === $load || ! isset( $load[0] ) ) {
 			\Hypercart_Logger::warning(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Failed to get load average',
 				array()
 			);
@@ -43,7 +43,7 @@ class CpuLoadCollector implements MetricsCollectorInterface {
 		$normalized = $cores > 0 ? $load_1min / $cores : $load_1min;
 
 		\Hypercart_Logger::debug(
-			'wp-server-monitor',
+			'hypercart-server-monitor',
 			'CPU load collected',
 			array(
 				'load_1min'  => $load_1min,

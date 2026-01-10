@@ -2,12 +2,12 @@
 /**
  * Scheduler Service
  *
- * @package WP_Server_Monitor
+ * @package Hypercart_Server_Monitor
  */
 
-namespace WP_Server_Monitor\Services;
+namespace Hypercart_Server_Monitor\Services;
 
-use WP_Server_Monitor\Domain\FsmStateStore;
+use Hypercart_Server_Monitor\Domain\FsmStateStore;
 
 /**
  * Manages WP-Cron scheduling for monitoring tasks.
@@ -16,7 +16,7 @@ class SchedulerService {
 	/**
 	 * Cron hook name.
 	 */
-	const CRON_HOOK = 'wp_server_monitor_run';
+	const CRON_HOOK = 'hypercart_server_monitor_run';
 
 	/**
 	 * Schedule interval name.
@@ -48,7 +48,7 @@ class SchedulerService {
 	public function add_custom_schedule( $schedules ) {
 		$schedules[ self::SCHEDULE_INTERVAL ] = array(
 			'interval' => 15 * MINUTE_IN_SECONDS,
-			'display'  => __( 'Every 15 Minutes', 'wp-server-monitor' ),
+			'display'  => __( 'Every 15 Minutes', 'hypercart-server-monitor' ),
 		);
 		return $schedules;
 	}
@@ -60,7 +60,7 @@ class SchedulerService {
 		// Check if already scheduled.
 		if ( wp_next_scheduled( self::CRON_HOOK ) ) {
 			\Hypercart_Logger::debug(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Cron already scheduled',
 				array( 'next_run' => wp_next_scheduled( self::CRON_HOOK ) )
 			);
@@ -76,7 +76,7 @@ class SchedulerService {
 
 		if ( false === $scheduled ) {
 			\Hypercart_Logger::error(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Failed to schedule cron event',
 				array()
 			);
@@ -84,7 +84,7 @@ class SchedulerService {
 		}
 
 		\Hypercart_Logger::info(
-			'wp-server-monitor',
+			'hypercart-server-monitor',
 			'Cron event scheduled',
 			array(
 				'interval'  => self::SCHEDULE_INTERVAL,
@@ -102,7 +102,7 @@ class SchedulerService {
 			wp_unschedule_event( $timestamp, self::CRON_HOOK );
 
 			\Hypercart_Logger::info(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Cron event unscheduled',
 				array()
 			);

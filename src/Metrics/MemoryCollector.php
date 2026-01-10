@@ -2,10 +2,10 @@
 /**
  * Memory Collector
  *
- * @package WP_Server_Monitor
+ * @package Hypercart_Server_Monitor
  */
 
-namespace WP_Server_Monitor\Metrics;
+namespace Hypercart_Server_Monitor\Metrics;
 
 /**
  * Collects memory usage percentage.
@@ -19,7 +19,7 @@ class MemoryCollector implements MetricsCollectorInterface {
 	public function collect() {
 		if ( ! $this->is_supported() ) {
 			\Hypercart_Logger::warning(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Memory collection not supported',
 				array()
 			);
@@ -29,7 +29,7 @@ class MemoryCollector implements MetricsCollectorInterface {
 		$meminfo = $this->parse_meminfo();
 		if ( empty( $meminfo ) ) {
 			\Hypercart_Logger::warning(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Failed to parse /proc/meminfo',
 				array()
 			);
@@ -46,7 +46,7 @@ class MemoryCollector implements MetricsCollectorInterface {
 		$used_pct = ( ( $total - $available ) / $total ) * 100;
 
 		\Hypercart_Logger::debug(
-			'wp-server-monitor',
+			'hypercart-server-monitor',
 			'Memory usage collected',
 			array(
 				'total_kb'     => $total,

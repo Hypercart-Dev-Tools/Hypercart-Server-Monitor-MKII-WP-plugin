@@ -2,10 +2,10 @@
 /**
  * Lock Helper
  *
- * @package WP_Server_Monitor
+ * @package Hypercart_Server_Monitor
  */
 
-namespace WP_Server_Monitor\Helpers;
+namespace Hypercart_Server_Monitor\Helpers;
 
 /**
  * Manages mutex locking using WordPress transients.
@@ -14,7 +14,7 @@ class LockHelper {
 	/**
 	 * Lock transient name.
 	 */
-	const LOCK_NAME = 'wp_server_monitor_lock';
+	const LOCK_NAME = 'hypercart_server_monitor_lock';
 
 	/**
 	 * Lock TTL (10 minutes).
@@ -30,7 +30,7 @@ class LockHelper {
 		// Check if already locked.
 		if ( get_transient( self::LOCK_NAME ) ) {
 			\Hypercart_Logger::warning(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Lock already held',
 				array( 'lock' => self::LOCK_NAME )
 			);
@@ -49,7 +49,7 @@ class LockHelper {
 
 		if ( $acquired ) {
 			\Hypercart_Logger::debug(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Lock acquired',
 				array( 'ttl' => self::LOCK_TTL )
 			);
@@ -68,7 +68,7 @@ class LockHelper {
 
 		if ( $released ) {
 			\Hypercart_Logger::debug(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Lock released',
 				array()
 			);

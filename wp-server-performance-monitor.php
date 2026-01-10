@@ -1,19 +1,19 @@
 <?php
 /**
- * Plugin Name: WP Server Performance Monitor
+ * Plugin Name: Hypercart Server Monitor MKII
  * Plugin URI: https://github.com/yourusername/wp-server-performance-monitor
  * Description: Monitors server health (CPU, Memory, Disk) every 15 minutes with email alerts and admin dashboard. Requires Hypercart Helper.
  * Version: 0.1.0
  * Author: Your Name
- * Author URI: https://yourwebsite.com
+ * Author URI: https://hypercart.io
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: wp-server-monitor
+ * Text Domain: hypercart-server-monitor
  * Domain Path: /languages
  * Requires at least: 5.8
  * Requires PHP: 7.4
  *
- * @package WP_Server_Monitor
+ * @package Hypercart_Server_Monitor
  */
 
 // Exit if accessed directly.
@@ -22,28 +22,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define plugin constants.
-define( 'WP_SERVER_MONITOR_VERSION', '0.1.0' );
-define( 'WP_SERVER_MONITOR_PLUGIN_FILE', __FILE__ );
-define( 'WP_SERVER_MONITOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'WP_SERVER_MONITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'WP_SERVER_MONITOR_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
+define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.1.0' );
+define( 'HYPERCART_SERVER_MONITOR_PLUGIN_FILE', __FILE__ );
+define( 'HYPERCART_SERVER_MONITOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'HYPERCART_SERVER_MONITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'HYPERCART_SERVER_MONITOR_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 
 /**
  * Check Hypercart Helper dependency.
  *
  * @return bool True if dependency met, false otherwise.
  */
-function wp_server_monitor_check_dependencies() {
+function hypercart_server_monitor_check_dependencies() {
 	// Check if required classes exist.
 	if ( ! class_exists( 'Hypercart_Time' ) || ! class_exists( 'Hypercart_Logger' ) ) {
-		add_action( 'admin_notices', 'wp_server_monitor_missing_dependency_notice' );
+		add_action( 'admin_notices', 'hypercart_server_monitor_missing_dependency_notice' );
 		return false;
 	}
 
 	// Check minimum version.
 	if ( defined( 'HYPERCART_HELPER_VERSION' ) &&
 	     version_compare( HYPERCART_HELPER_VERSION, '1.0.0', '<' ) ) {
-		add_action( 'admin_notices', 'wp_server_monitor_version_mismatch_notice' );
+		add_action( 'admin_notices', 'hypercart_server_monitor_version_mismatch_notice' );
 		return false;
 	}
 
@@ -53,11 +53,11 @@ function wp_server_monitor_check_dependencies() {
 /**
  * Display admin notice for missing Hypercart Helper.
  */
-function wp_server_monitor_missing_dependency_notice() {
+function hypercart_server_monitor_missing_dependency_notice() {
 	?>
 	<div class="notice notice-error">
 		<p>
-			<strong>WP Server Performance Monitor</strong> requires
+			<strong>Hypercart Server Monitor MKII</strong> requires
 			<strong>Hypercart Helper v1.0.0+</strong> to be installed and active.
 			<a href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>">
 				Manage Plugins
@@ -70,12 +70,12 @@ function wp_server_monitor_missing_dependency_notice() {
 /**
  * Display admin notice for version mismatch.
  */
-function wp_server_monitor_version_mismatch_notice() {
+function hypercart_server_monitor_version_mismatch_notice() {
 	$current_version = defined( 'HYPERCART_HELPER_VERSION' ) ? HYPERCART_HELPER_VERSION : 'unknown';
 	?>
 	<div class="notice notice-error">
 		<p>
-			<strong>WP Server Performance Monitor</strong> requires
+			<strong>Hypercart Server Monitor MKII</strong> requires
 			<strong>Hypercart Helper v1.0.0+</strong>
 			(found v<?php echo esc_html( $current_version ); ?>).
 		</p>
@@ -84,71 +84,71 @@ function wp_server_monitor_version_mismatch_notice() {
 }
 
 // Early dependency check - don't load plugin if dependency missing.
-if ( ! wp_server_monitor_check_dependencies() ) {
+if ( ! hypercart_server_monitor_check_dependencies() ) {
 	return;
 }
 
 // Require Composer autoloader if it exists.
-if ( file_exists( WP_SERVER_MONITOR_PLUGIN_DIR . 'vendor/autoload.php' ) ) {
-	require_once WP_SERVER_MONITOR_PLUGIN_DIR . 'vendor/autoload.php';
+if ( file_exists( HYPERCART_SERVER_MONITOR_PLUGIN_DIR . 'vendor/autoload.php' ) ) {
+	require_once HYPERCART_SERVER_MONITOR_PLUGIN_DIR . 'vendor/autoload.php';
 }
 
 // Require main plugin class.
-require_once WP_SERVER_MONITOR_PLUGIN_DIR . 'src/Plugin.php';
+require_once HYPERCART_SERVER_MONITOR_PLUGIN_DIR . 'src/Plugin.php';
 
 /**
  * Initialize the plugin.
  */
-function wp_server_monitor_init() {
+function hypercart_server_monitor_init() {
 	// Log plugin initialization.
 	Hypercart_Logger::info(
-		'wp-server-monitor',
+		'hypercart-server-monitor',
 		'Plugin initializing',
 		array(
-			'version' => WP_SERVER_MONITOR_VERSION,
+			'version' => HYPERCART_SERVER_MONITOR_VERSION,
 			'php_version' => PHP_VERSION,
 			'wp_version' => get_bloginfo( 'version' ),
 		)
 	);
 
 	// Initialize plugin.
-	WP_Server_Monitor\Plugin::get_instance();
+	Hypercart_Server_Monitor\Plugin::get_instance();
 }
-add_action( 'plugins_loaded', 'wp_server_monitor_init' );
+add_action( 'plugins_loaded', 'hypercart_server_monitor_init' );
 
 /**
  * Activation hook.
  */
-function wp_server_monitor_activate() {
+function hypercart_server_monitor_activate() {
 	// Log activation.
 	Hypercart_Logger::info(
-		'wp-server-monitor',
+		'hypercart-server-monitor',
 		'Plugin activated',
-		array( 'version' => WP_SERVER_MONITOR_VERSION )
+		array( 'version' => HYPERCART_SERVER_MONITOR_VERSION )
 	);
 
 	// Run activation tasks.
-	if ( class_exists( 'WP_Server_Monitor\Plugin' ) ) {
-		WP_Server_Monitor\Plugin::activate();
+	if ( class_exists( 'Hypercart_Server_Monitor\Plugin' ) ) {
+		Hypercart_Server_Monitor\Plugin::activate();
 	}
 }
-register_activation_hook( __FILE__, 'wp_server_monitor_activate' );
+register_activation_hook( __FILE__, 'hypercart_server_monitor_activate' );
 
 /**
  * Deactivation hook.
  */
-function wp_server_monitor_deactivate() {
+function hypercart_server_monitor_deactivate() {
 	// Log deactivation.
 	Hypercart_Logger::info(
-		'wp-server-monitor',
+		'hypercart-server-monitor',
 		'Plugin deactivated',
-		array( 'version' => WP_SERVER_MONITOR_VERSION )
+		array( 'version' => HYPERCART_SERVER_MONITOR_VERSION )
 	);
 
 	// Run deactivation tasks.
-	if ( class_exists( 'WP_Server_Monitor\Plugin' ) ) {
-		WP_Server_Monitor\Plugin::deactivate();
+	if ( class_exists( 'Hypercart_Server_Monitor\Plugin' ) ) {
+		Hypercart_Server_Monitor\Plugin::deactivate();
 	}
 }
-register_deactivation_hook( __FILE__, 'wp_server_monitor_deactivate' );
+register_deactivation_hook( __FILE__, 'hypercart_server_monitor_deactivate' );
 

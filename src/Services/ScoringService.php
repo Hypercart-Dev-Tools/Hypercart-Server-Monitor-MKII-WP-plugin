@@ -2,10 +2,10 @@
 /**
  * Scoring Service
  *
- * @package WP_Server_Monitor
+ * @package Hypercart_Server_Monitor
  */
 
-namespace WP_Server_Monitor\Services;
+namespace Hypercart_Server_Monitor\Services;
 
 /**
  * Converts raw metrics to subscores and combined score (0-100).
@@ -62,7 +62,7 @@ class ScoringService {
 		$combined = $weighted_sum / $total_weight;
 
 		\Hypercart_Logger::debug(
-			'wp-server-monitor',
+			'hypercart-server-monitor',
 			'Score calculated',
 			array(
 				'subscores' => $subscores,

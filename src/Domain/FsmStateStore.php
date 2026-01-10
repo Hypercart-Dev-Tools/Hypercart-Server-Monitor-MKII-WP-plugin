@@ -2,10 +2,10 @@
 /**
  * FSM State Store
  *
- * @package WP_Server_Monitor
+ * @package Hypercart_Server_Monitor
  */
 
-namespace WP_Server_Monitor\Domain;
+namespace Hypercart_Server_Monitor\Domain;
 
 /**
  * FSM-light state store using WordPress options.
@@ -14,7 +14,7 @@ class FsmStateStore {
 	/**
 	 * Option name for state storage.
 	 */
-	const OPTION_NAME = 'wp_server_monitor_state';
+	const OPTION_NAME = 'hypercart_server_monitor_state';
 
 	/**
 	 * Valid states.
@@ -50,7 +50,7 @@ class FsmStateStore {
 		update_option( self::OPTION_NAME, $initial_state, false );
 
 		\Hypercart_Logger::info(
-			'wp-server-monitor',
+			'hypercart-server-monitor',
 			'FSM state store initialized',
 			array( 'initial_state' => 'idle' )
 		);
@@ -101,7 +101,7 @@ class FsmStateStore {
 		// Validate state.
 		if ( ! in_array( $new_state, $this->valid_states, true ) ) {
 			\Hypercart_Logger::error(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Invalid state transition attempted',
 				array(
 					'new_state' => $new_state,
@@ -127,7 +127,7 @@ class FsmStateStore {
 		update_option( self::OPTION_NAME, $new_data, false );
 
 		\Hypercart_Logger::debug(
-			'wp-server-monitor',
+			'hypercart-server-monitor',
 			'State transition',
 			array(
 				'from' => $old_state,
@@ -156,7 +156,7 @@ class FsmStateStore {
 		if ( $data['failure_count'] >= 5 ) {
 			$data['state'] = 'tripped';
 			\Hypercart_Logger::warning(
-				'wp-server-monitor',
+				'hypercart-server-monitor',
 				'Circuit breaker tripped',
 				array(
 					'failure_count' => $data['failure_count'],
