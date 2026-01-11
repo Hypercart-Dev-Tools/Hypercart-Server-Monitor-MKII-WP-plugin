@@ -54,6 +54,7 @@ class AdminController {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_hsm_run_manual_test', array( $this, 'ajax_run_manual_test' ) );
 		add_action( 'wp_ajax_hsm_send_test_email', array( $this, 'ajax_send_test_email' ) );
+		add_action( 'wp_ajax_hsm_schedule_cron', array( $this, 'ajax_schedule_cron' ) );
 	}
 
 	/**
@@ -237,9 +238,22 @@ class AdminController {
 	 * Render Logs tab.
 	 */
 	public function render_tab_logs() {
-		$log_files = class_exists( 'Hypercart_Logger' ) ? \Hypercart_Logger::get_log_files() : array();
+		$log_files     = class_exists( 'Hypercart_Logger' ) ? \Hypercart_Logger::get_log_files() : array();
 		$selected_file = isset( $_GET['log_file'] ) ? sanitize_file_name( $_GET['log_file'] ) : null;
-		$log_content = '';
+		$log_content   = '';
+
+		// SECURITY: Only allow log files from the allowlist to prevent directory traversal.
+		if ( $selected_file && ! in_array( $selected_file, $log_files, true ) ) {
+			\Hypercart_Logger::warning(
+				'hypercart-server-monitor',
+				'Rejected invalid log file selection',
+				array(
+					'requested_file' => $selected_file,
+					'user'           => wp_get_current_user()->user_login,
+				)
+			);
+			$selected_file = null; // Reject invalid selection.
+		}
 
 		if ( $selected_file && class_exists( 'Hypercart_Logger' ) ) {
 			$log_content = \Hypercart_Logger::read_log( $selected_file );
@@ -389,14 +403,32 @@ class AdminController {
 
 		try {
 			// Get most recent sample from JSON.
-			$data    = $this->repository->read();
+			$data = $this->repository->read();
+
+			// Debug logging.
+			\Hypercart_Logger::debug(
+				'hypercart-server-monitor',
+				'Test email - repository data',
+				array(
+					'data_keys'     => array_keys( $data ),
+					'has_samples'   => isset( $data['samples'] ),
+					'samples_count' => isset( $data['samples'] ) ? count( $data['samples'] ) : 0,
+					'samples_type'  => isset( $data['samples'] ) ? gettype( $data['samples'] ) : 'not set',
+				)
+			);
+
 			$samples = $data['samples'] ?? array();
 
 			if ( empty( $samples ) ) {
-				throw new \Exception( 'No benchmark data available. Please run a manual test or wait for the next scheduled run.' );
+				throw new \Exception(
+					'No benchmark data available. The JSON file is empty. ' .
+					'Manual tests do NOT save to JSON (by design). ' .
+					'Please wait for the next scheduled cron run (every 15 minutes), ' .
+					'or check the Debug tab to see if cron is running properly.'
+				);
 			}
 
-			// Get latest sample.
+			// Get latest sample (reset array pointer first).
 			$latest_sample = end( $samples );
 
 			// Log test email attempt.
@@ -426,6 +458,70 @@ class AdminController {
 			\Hypercart_Logger::error(
 				'hypercart-server-monitor',
 				'Test email failed',
+				array( 'error' => $e->getMessage() )
+			);
+
+			wp_send_json_error(
+				array(
+					'message' => $e->getMessage(),
+				)
+			);
+		}
+	}
+
+	/**
+	 * Handle AJAX request to manually schedule cron.
+	 */
+	public function ajax_schedule_cron() {
+		// Verify nonce.
+		check_ajax_referer( 'hsm_manual_test', 'nonce' );
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+		}
+
+		try {
+			// Check if already scheduled.
+			$next_run = wp_next_scheduled( 'hypercart_server_monitor_run' );
+			if ( $next_run ) {
+				wp_send_json_error(
+					array(
+						'message'  => 'Cron is already scheduled',
+						'next_run' => \Hypercart_Time::format( 'Y-m-d H:i:s', $next_run ),
+					)
+				);
+			}
+
+			// Schedule cron.
+			$scheduler = new \Hypercart_Server_Monitor\Services\SchedulerService( $this->state_store );
+			$scheduler->schedule();
+
+			// Verify it was scheduled.
+			$next_run = wp_next_scheduled( 'hypercart_server_monitor_run' );
+			if ( ! $next_run ) {
+				throw new \Exception( 'Failed to schedule cron. Check logs for details.' );
+			}
+
+			\Hypercart_Logger::info(
+				'hypercart-server-monitor',
+				'Cron manually scheduled from admin UI',
+				array(
+					'user'     => wp_get_current_user()->user_login,
+					'next_run' => $next_run,
+				)
+			);
+
+			wp_send_json_success(
+				array(
+					'message'  => 'Cron scheduled successfully!',
+					'next_run' => \Hypercart_Time::format( 'Y-m-d H:i:s', $next_run ),
+				)
+			);
+		} catch ( \Exception $e ) {
+			\Hypercart_Logger::error(
+				'hypercart-server-monitor',
+				'Failed to schedule cron from admin UI',
 				array( 'error' => $e->getMessage() )
 			);
 

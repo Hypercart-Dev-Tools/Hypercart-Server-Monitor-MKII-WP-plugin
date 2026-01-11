@@ -123,6 +123,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</tr>
 			</tbody>
 		</table>
+
+		<?php if ( ! $cron_status['scheduled'] ) : ?>
+			<div style="margin-top: 15px;">
+				<button type="button" id="hsm-schedule-cron" class="button button-primary">
+					<span class="dashicons dashicons-clock"></span>
+					<?php esc_html_e( 'Schedule Cron Now', 'hypercart-server-monitor' ); ?>
+				</button>
+				<p class="description">
+					<?php esc_html_e( 'Manually schedule the cron job if it was not scheduled during plugin activation.', 'hypercart-server-monitor' ); ?>
+				</p>
+
+				<div id="hsm-cron-spinner" class="hsm-spinner" style="display: none;">
+					<span class="spinner is-active"></span>
+					<span><?php esc_html_e( 'Scheduling cron...', 'hypercart-server-monitor' ); ?></span>
+				</div>
+
+				<div id="hsm-cron-success" class="notice notice-success inline" style="display: none;">
+					<p><strong><?php esc_html_e( 'Success!', 'hypercart-server-monitor' ); ?></strong> <span id="hsm-cron-success-message"></span></p>
+				</div>
+
+				<div id="hsm-cron-error" class="notice notice-error inline" style="display: none;">
+					<p><strong><?php esc_html_e( 'Error:', 'hypercart-server-monitor' ); ?></strong> <span id="hsm-cron-error-message"></span></p>
+				</div>
+			</div>
+		<?php endif; ?>
 	</div>
 
 	<!-- Lock Status -->
@@ -236,3 +261,53 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 </div>
 
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+	$('#hsm-schedule-cron').on('click', function() {
+		var $button = $(this);
+		var $spinner = $('#hsm-cron-spinner');
+		var $success = $('#hsm-cron-success');
+		var $error = $('#hsm-cron-error');
+
+		// Disable button and show spinner.
+		$button.prop('disabled', true);
+		$spinner.show();
+		$success.hide();
+		$error.hide();
+
+		// Run AJAX request.
+		$.ajax({
+			url: hsmAdmin.ajaxUrl,
+			type: 'POST',
+			data: {
+				action: 'hsm_schedule_cron',
+				nonce: hsmAdmin.nonce
+			},
+			success: function(response) {
+				$spinner.hide();
+				$button.prop('disabled', false);
+
+				if (response.success) {
+					var message = response.data.message + ' Next run: ' + response.data.next_run;
+					$success.find('#hsm-cron-success-message').text(message);
+					$success.show();
+
+					// Reload page after 2 seconds to update cron status.
+					setTimeout(function() {
+						location.reload();
+					}, 2000);
+				} else {
+					$error.find('#hsm-cron-error-message').text(response.data.message || 'Unknown error');
+					$error.show();
+				}
+			},
+			error: function(xhr, status, error) {
+				$spinner.hide();
+				$button.prop('disabled', false);
+				$error.find('#hsm-cron-error-message').text('AJAX error: ' + error);
+				$error.show();
+			}
+		});
+	});
+});
+</script>

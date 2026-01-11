@@ -66,15 +66,43 @@ class HealthRepository {
 			return false;
 		}
 
-		// Add .htaccess to prevent web access.
+		// Add .htaccess to prevent web access (Apache).
 		$htaccess = trailingslashit( $dir ) . '.htaccess';
 		if ( ! file_exists( $htaccess ) ) {
-			file_put_contents( $htaccess, "Deny from all\n" );
+			$htaccess_content = "# Hypercart Server Monitor - Deny all web access\n";
+			$htaccess_content .= "<IfModule mod_authz_core.c>\n";
+			$htaccess_content .= "    Require all denied\n";
+			$htaccess_content .= "</IfModule>\n";
+			$htaccess_content .= "<IfModule !mod_authz_core.c>\n";
+			$htaccess_content .= "    Deny from all\n";
+			$htaccess_content .= "</IfModule>\n";
+
+			$result = file_put_contents( $htaccess, $htaccess_content );
+			if ( false === $result ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Failed to create .htaccess protection',
+					array( 'path' => $htaccess )
+				);
+			}
+		}
+
+		// Add index.html to prevent directory listing (works on all servers).
+		$index_file = trailingslashit( $dir ) . 'index.html';
+		if ( ! file_exists( $index_file ) ) {
+			$result = file_put_contents( $index_file, '<!-- Access denied -->' );
+			if ( false === $result ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Failed to create index.html protection',
+					array( 'path' => $index_file )
+				);
+			}
 		}
 
 		\Hypercart_Logger::info(
 			'hypercart-server-monitor',
-			'Data directory created',
+			'Data directory created with security protections',
 			array( 'dir' => $dir )
 		);
 
@@ -90,6 +118,23 @@ class HealthRepository {
 		$file_path = $this->get_file_path();
 
 		if ( ! file_exists( $file_path ) ) {
+			return $this->get_empty_structure();
+		}
+
+		// SECURITY: Check file size before reading (max 1MB).
+		// With 24h pruning and 15-min intervals, file should be ~10-20KB max.
+		// 1MB limit is a safety net against unexpected growth.
+		$file_size = filesize( $file_path );
+		if ( false === $file_size || $file_size > 1048576 ) {
+			\Hypercart_Logger::error(
+				'hypercart-server-monitor',
+				'JSON file too large, archiving and resetting',
+				array(
+					'file' => $file_path,
+					'size' => $file_size,
+				)
+			);
+			$this->archive_corrupted_file( $file_path );
 			return $this->get_empty_structure();
 		}
 

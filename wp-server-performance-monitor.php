@@ -22,7 +22,7 @@ exit;
 }
 
 // Define plugin constants.
-define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.4.0' );
+define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.4.1' );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_FILE', __FILE__ );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

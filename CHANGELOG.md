@@ -5,6 +5,57 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-01-11
+
+### Security Fixes - Audit Response
+
+**Critical security and hardening improvements based on code audit.**
+
+#### Log File Allowlist (CRITICAL)
+- **Fixed**: Directory traversal vulnerability in log viewer
+- **Location**: `AdminController::render_tab_logs()`
+- **Change**: Added strict allowlist check against `Hypercart_Logger::get_log_files()`
+- **Security**: Rejects any log file not in the allowlist before calling `read_log()`
+- **Logging**: Logs rejected attempts with username for security monitoring
+- **Impact**: Prevents arbitrary file read via `$_GET['log_file']` parameter
+
+#### Subject Line Float Handling
+- **Fixed**: Float truncation in email subject line
+- **Location**: `EmailService::build_subject()`
+- **Change**: Changed `%d` to `%.0f` for score formatting
+- **Change**: Changed `%.2f` to `%.1f` for benchmark time (consistency)
+- **Impact**: Correctly handles float scores without truncation
+
+#### .htaccess Hardening
+- **Enhanced**: Directory protection file creation
+- **Location**: `HealthRepository::ensure_directory()`
+- **Added**: Apache 2.4+ compatible directives (`Require all denied`)
+- **Added**: Fallback for Apache 2.2 (`Deny from all`)
+- **Added**: `index.html` file for directory listing protection (works on all servers)
+- **Added**: Error handling and logging for failed file writes
+- **Impact**: Better defense-in-depth for data directory protection
+
+#### Max File Size Check
+- **Added**: 1MB file size limit in JSON reader
+- **Location**: `HealthRepository::read()`
+- **Check**: Validates file size before reading content
+- **Limit**: 1MB (expected size is ~10-20KB with 24h pruning)
+- **Action**: Archives oversized files and resets to empty structure
+- **Impact**: Prevents memory exhaustion from unexpected file growth
+
+### Files Modified
+- `src/Admin/AdminController.php` - Log file allowlist
+- `src/Services/EmailService.php` - Subject line float fix
+- `src/Persistence/HealthRepository.php` - .htaccess hardening + file size check
+
+### Security Posture
+- ✅ **Critical**: Directory traversal vulnerability fixed
+- ✅ **Hardening**: Multiple defense-in-depth improvements
+- ✅ **Logging**: Security events now logged for monitoring
+- ✅ **Robustness**: Better error handling for filesystem operations
+
+---
+
 ## [0.4.0] - 2026-01-10
 
 ### Added - Phase 5: Email Notifications
@@ -49,12 +100,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/Admin/AdminController.php` - Added Email tab and AJAX handler
 - `README.md` - Documented email requirements
 
+#### Manual Cron Scheduling
+- **New Button**: "Schedule Cron Now" in Debug tab
+- **Auto-hide**: Only shows if cron is not scheduled
+- **AJAX Handler**: `ajax_schedule_cron()` in `AdminController`
+- **Auto-reload**: Page reloads after successful scheduling
+- **Use Case**: Fix cron scheduling issues without deactivating plugin
+
 ### Benefits
 - ✅ Instant notification of performance issues
 - ✅ Score visible in subject line (no need to open email)
 - ✅ Test email functionality for debugging SMTP
 - ✅ FSM-first approach (email after JSON write)
 - ✅ Non-blocking (email failures don't stop monitoring)
+- ✅ Manual cron scheduling button for troubleshooting
 
 ---
 

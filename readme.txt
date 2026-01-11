@@ -4,7 +4,7 @@ Tags: monitoring, performance, server, health, metrics
 Requires at least: 5.8
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -89,6 +89,16 @@ The JSON file keeps the last 24 hours of metrics (auto-pruned). Log files persis
 Yes! The synthetic PHP benchmark works on all operating systems and environments (Local, staging, production, Windows, macOS, Linux) because it only uses standard PHP functions.
 
 == Changelog ==
+
+= 0.4.1 - 2026-01-11 =
+* Security: Fixed directory traversal vulnerability in log viewer (CRITICAL)
+* Security: Added strict allowlist check for log file selection
+* Security: Enhanced .htaccess creation with Apache 2.4+ directives
+* Security: Added index.html for directory listing protection
+* Security: Added 1MB max file size check in JSON reader
+* Fixed: Subject line float truncation in email notifications
+* Improved: Error handling and logging for filesystem operations
+* Improved: Defense-in-depth security posture
 
 = 0.4.0 - 2026-01-10 =
 * Added: Email notifications sent automatically after each benchmark run

@@ -83,7 +83,7 @@ class EmailService {
 		$benchmark_ms   = $score['benchmark_ms'] ?? 0;
 
 		return sprintf(
-			'[Server Monitor] Score: %d (%s) | Benchmark: %.2fms',
+			'[Server Monitor] Score: %.0f (%s) | Benchmark: %.1fms',
 			$combined_score,
 			$label,
 			$benchmark_ms
