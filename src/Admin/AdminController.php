@@ -538,11 +538,7 @@ class AdminController {
 	 * @return array Benchmark metrics.
 	 */
 	private function collect_metrics() {
-		$benchmark_collector = new \Hypercart_Server_Monitor\Metrics\BenchmarkCollector();
-		$benchmark_data      = $benchmark_collector->collect();
-
-		return array(
-			'benchmark' => $benchmark_data,
-		);
+		$metrics_service = new \Hypercart_Server_Monitor\Services\MetricsService();
+		return $metrics_service->collect();
 	}
 }

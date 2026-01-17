@@ -237,12 +237,8 @@ class Plugin {
 	 * @return array Benchmark metrics.
 	 */
 	private function collect_metrics() {
-		$benchmark_collector = new Metrics\BenchmarkCollector();
-		$benchmark_data      = $benchmark_collector->collect();
-
-		return array(
-			'benchmark' => $benchmark_data,
-		);
+		$metrics_service = new Services\MetricsService();
+		return $metrics_service->collect();
 	}
 
 	/**

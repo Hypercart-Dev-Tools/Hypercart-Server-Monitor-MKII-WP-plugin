@@ -21,7 +21,7 @@ Goal: Audit for reliability, maintainability, and best-practice adherence
 - [x] F5: Centralize scheduling paths (activation/admin) to avoid drift.
 
 ## Phase 4: DRY and Reuse
-- [ ] F6: Consolidate metric collection into a shared service.
+- [x] F6: Consolidate metric collection into a shared service.
 
 # Reliability
 - Lock acquisition is non-atomic (check-then-set transient). Overlapping cron runs can both acquire the lock, leading to duplicate writes/emails and inconsistent state. `src/Helpers/LockHelper.php`
@@ -49,4 +49,4 @@ Goal: Audit for reliability, maintainability, and best-practice adherence
 - F3 (completed): Split “read” from “repair/rotate” and run repair only in the cron path. Impact: removes heavy I/O from admin views and avoids mid-write renames. `src/Persistence/HealthRepository.php`, `src/Admin/AdminController.php`
 - F4 (completed): Add state transition guards (version field or compare-and-swap). Impact: prevents lost updates when runs overlap. `src/Domain/FsmStateStore.php`, `src/Plugin.php`
 - F5 (completed): Centralize scheduling paths to a single entry point. Impact: reduces drift and hard-to-trace scheduling inconsistencies. `src/Plugin.php`, `src/Admin/AdminController.php`, `src/Services/SchedulerService.php`
-- F6: Consolidate metric collection into a shared service. Impact: reduces duplicated logic and maintenance overhead. `src/Plugin.php`, `src/Admin/AdminController.php`
+- F6 (completed): Consolidate metric collection into a shared service. Impact: reduces duplicated logic and maintenance overhead. `src/Plugin.php`, `src/Admin/AdminController.php`, `src/Services/MetricsService.php`
