@@ -66,7 +66,7 @@ class Plugin {
 		$this->state_store = new Domain\FsmStateStore();
 
 		// Initialize scheduler.
-		$this->scheduler = new Services\SchedulerService( $this->state_store );
+		$this->scheduler = new Services\SchedulerService();
 
 		// Initialize admin controller (if in admin).
 		if ( is_admin() ) {
@@ -270,7 +270,7 @@ class Plugin {
 		$state_store->initialize();
 
 		// Schedule cron event.
-		$scheduler = new Services\SchedulerService( $state_store );
+		$scheduler = new Services\SchedulerService();
 		$scheduler->schedule();
 
 		\Hypercart_Logger::info(

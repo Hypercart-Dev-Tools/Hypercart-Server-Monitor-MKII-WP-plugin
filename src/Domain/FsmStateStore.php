@@ -36,16 +36,7 @@ class FsmStateStore {
 	 * Initialize state store (on activation).
 	 */
 	public function initialize() {
-		$initial_state = array(
-			'state'            => 'idle',
-			'updated_utc'      => \Hypercart_Time::now(),
-			'failure_count'    => 0,
-			'last_error'       => null,
-			'last_run_utc'     => null,
-			'last_duration_ms' => null,
-			'lock_status'      => 'unlocked',
-			'lock_acquired_at' => null,
-		);
+		$initial_state = $this->get_default_state();
 
 		update_option( self::OPTION_NAME, $initial_state, false );
 
@@ -65,18 +56,24 @@ class FsmStateStore {
 		$state = get_option( self::OPTION_NAME, array() );
 
 		// Ensure all keys exist.
-		return wp_parse_args(
-			$state,
-			array(
-				'state'            => 'idle',
-				'updated_utc'      => \Hypercart_Time::now(),
-				'failure_count'    => 0,
-				'last_error'       => null,
-				'last_run_utc'     => null,
-				'last_duration_ms' => null,
-				'lock_status'      => 'unlocked',
-				'lock_acquired_at' => null,
-			)
+		return wp_parse_args( $state, $this->get_default_state() );
+	}
+
+	/**
+	 * Get the default state array.
+	 *
+	 * @return array
+	 */
+	private function get_default_state() {
+		return array(
+			'state'            => 'idle',
+			'updated_utc'      => \Hypercart_Time::now(),
+			'failure_count'    => 0,
+			'last_error'       => null,
+			'last_run_utc'     => null,
+			'last_duration_ms' => null,
+			'lock_status'      => 'unlocked',
+			'lock_acquired_at' => null,
 		);
 	}
 

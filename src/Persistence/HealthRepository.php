@@ -17,6 +17,11 @@ class HealthRepository {
 	const FILE_NAME = 'health-data.json';
 
 	/**
+	 * Lock file name.
+	 */
+	const LOCK_FILE = 'health-data.lock';
+
+	/**
 	 * Temporary file suffix.
 	 */
 	const TMP_SUFFIX = '.tmp';
@@ -43,6 +48,15 @@ class HealthRepository {
 	 */
 	private function get_file_path() {
 		return trailingslashit( $this->get_data_dir() ) . self::FILE_NAME;
+	}
+
+	/**
+	 * Get lock file path.
+	 *
+	 * @return string Lock file path.
+	 */
+	private function get_lock_path() {
+		return trailingslashit( $this->get_data_dir() ) . self::LOCK_FILE;
 	}
 
 	/**
@@ -227,16 +241,45 @@ class HealthRepository {
 	 * @return bool True on success, false on failure.
 	 */
 	public function add_sample( $sample ) {
-		$data = $this->read();
+		if ( ! $this->ensure_directory() ) {
+			return false;
+		}
 
-		// Add new sample.
-		$data['samples'][]   = $sample;
-		$data['updated_utc'] = \Hypercart_Time::iso8601( \Hypercart_Time::now() );
+		$lock_handle = fopen( $this->get_lock_path(), 'c' );
+		if ( false === $lock_handle ) {
+			\Hypercart_Logger::error(
+				'hypercart-server-monitor',
+				'Failed to open repository lock file',
+				array( 'file' => $this->get_lock_path() )
+			);
+			return false;
+		}
 
-		// Prune old samples (keep last 24 hours).
-		$data['samples'] = $this->prune_old_samples( $data['samples'] );
+		if ( ! flock( $lock_handle, LOCK_EX ) ) {
+			fclose( $lock_handle );
+			\Hypercart_Logger::error(
+				'hypercart-server-monitor',
+				'Failed to acquire repository lock',
+				array( 'file' => $this->get_lock_path() )
+			);
+			return false;
+		}
 
-		return $this->write( $data );
+		try {
+			$data = $this->read();
+
+			// Add new sample.
+			$data['samples'][]   = $sample;
+			$data['updated_utc'] = \Hypercart_Time::iso8601( \Hypercart_Time::now() );
+
+			// Prune old samples (keep last 24 hours).
+			$data['samples'] = $this->prune_old_samples( $data['samples'] );
+
+			return $this->write( $data );
+		} finally {
+			flock( $lock_handle, LOCK_UN );
+			fclose( $lock_handle );
+		}
 	}
 
 	/**

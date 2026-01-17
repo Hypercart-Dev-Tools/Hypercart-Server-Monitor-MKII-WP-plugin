@@ -14,13 +14,29 @@ namespace Hypercart_Server_Monitor\Services;
  */
 class ScoringService {
 	/**
-	 * Baseline benchmark time in milliseconds.
-	 *
-	 * This represents "good" performance. Faster = higher score, slower = lower score.
-	 *
-	 * @var float
+	 * Baseline benchmark time in milliseconds for a "good" score.
 	 */
-	private $baseline_ms = 100.0;
+	const BASELINE_MS = 100.0;
+
+	/**
+	 * Score for a benchmark at or better than the baseline.
+	 */
+	const MAX_SCORE = 100;
+
+	/**
+	 * Score at 2x the baseline time.
+	 */
+	const TIER_2_SCORE = 50;
+
+	/**
+	 * Score at 4x the baseline time.
+	 */
+	const TIER_3_SCORE = 20;
+
+	/**
+	 * A minimal score for very slow but completed benchmarks.
+	 */
+	const MINIMAL_SCORE = 10;
 
 	/**
 	 * Calculate score from benchmark metrics.
@@ -87,7 +103,7 @@ class ScoringService {
 	 * Score benchmark execution time.
 	 *
 	 * Lower execution time = higher score.
-	 * Uses baseline_ms as reference point.
+	 * Uses BASELINE_MS as reference point.
 	 *
 	 * @param float $time_ms Average execution time in milliseconds.
 	 * @return int Score (0-100).
@@ -99,27 +115,29 @@ class ScoringService {
 		// 2x to 4x baseline → linear down to 20
 		// > 4x baseline → 0
 
-		if ( $time_ms <= $this->baseline_ms ) {
-			return 100;
+		if ( $time_ms <= self::BASELINE_MS ) {
+			return self::MAX_SCORE;
 		}
 
-		$double_baseline = $this->baseline_ms * 2;
+		$double_baseline = self::BASELINE_MS * 2;
 		if ( $time_ms <= $double_baseline ) {
 			// Linear from 100 to 50.
-			$ratio = ( $time_ms - $this->baseline_ms ) / $this->baseline_ms;
-			return (int) round( 100 - ( $ratio * 50 ) );
+			$ratio = ( $time_ms - self::BASELINE_MS ) / self::BASELINE_MS;
+			$score_decay = ( self::MAX_SCORE - self::TIER_2_SCORE );
+			return (int) round( self::MAX_SCORE - ( $ratio * $score_decay ) );
 		}
 
-		$quad_baseline = $this->baseline_ms * 4;
+		$quad_baseline = self::BASELINE_MS * 4;
 		if ( $time_ms <= $quad_baseline ) {
 			// Linear from 50 to 20.
 			$ratio = ( $time_ms - $double_baseline ) / ( $double_baseline );
-			return (int) round( 50 - ( $ratio * 30 ) );
+			$score_decay = ( self::TIER_2_SCORE - self::TIER_3_SCORE );
+			return (int) round( self::TIER_2_SCORE - ( $ratio * $score_decay ) );
 		}
 
 		// Very slow, but give some points for completing.
-		if ( $time_ms <= $this->baseline_ms * 10 ) {
-			return 10;
+		if ( $time_ms <= self::BASELINE_MS * 10 ) {
+			return self::MINIMAL_SCORE;
 		}
 
 		return 0;
