@@ -17,6 +17,16 @@ class FsmStateStore {
 	const OPTION_NAME = 'hypercart_server_monitor_state';
 
 	/**
+	 * Option name for state lock.
+	 */
+	const LOCK_NAME = 'hypercart_server_monitor_state_lock';
+
+	/**
+	 * Lock TTL in seconds.
+	 */
+	const LOCK_TTL = 30;
+
+	/**
 	 * Valid states.
 	 *
 	 * @var array
@@ -95,6 +105,8 @@ class FsmStateStore {
 	 * @return bool True on success, false on failure.
 	 */
 	public function transition_to( $new_state, $metadata = array() ) {
+		return $this->with_state_lock(
+			function () use ( $new_state, $metadata ) {
 		// Validate state.
 		if ( ! in_array( $new_state, $this->valid_states, true ) ) {
 			\Hypercart_Logger::error(
@@ -133,6 +145,8 @@ class FsmStateStore {
 		);
 
 		return true;
+			}
+		);
 	}
 
 	/**
@@ -141,39 +155,117 @@ class FsmStateStore {
 	 * @param string $error_message Error message.
 	 */
 	public function record_error( $error_message ) {
-		$data = $this->get_state_data();
+		return $this->with_state_lock(
+			function () use ( $error_message ) {
+				$data = $this->get_state_data();
 
-		$data['failure_count']++;
-		$data['last_error'] = array(
-			'message'   => $error_message,
-			'timestamp' => \Hypercart_Time::now(),
+				$data['failure_count']++;
+				$data['last_error'] = array(
+					'message'   => $error_message,
+					'timestamp' => \Hypercart_Time::now(),
+				);
+
+				// Trip circuit breaker after 5 consecutive failures.
+				if ( $data['failure_count'] >= 5 ) {
+					$data['state'] = 'tripped';
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Circuit breaker tripped',
+						array(
+							'failure_count' => $data['failure_count'],
+							'last_error'    => $error_message,
+						)
+					);
+				}
+
+				update_option( self::OPTION_NAME, $data, false );
+
+				return true;
+			}
 		);
-
-		// Trip circuit breaker after 5 consecutive failures.
-		if ( $data['failure_count'] >= 5 ) {
-			$data['state'] = 'tripped';
-			\Hypercart_Logger::warning(
-				'hypercart-server-monitor',
-				'Circuit breaker tripped',
-				array(
-					'failure_count' => $data['failure_count'],
-					'last_error'    => $error_message,
-				)
-			);
-		}
-
-		update_option( self::OPTION_NAME, $data, false );
 	}
 
 	/**
 	 * Reset failure counter (on successful run).
 	 */
 	public function reset_failures() {
-		$data                   = $this->get_state_data();
-		$data['failure_count']  = 0;
-		$data['last_error']     = null;
+		return $this->with_state_lock(
+			function () {
+				$data                   = $this->get_state_data();
+				$data['failure_count']  = 0;
+				$data['last_error']     = null;
 
-		update_option( self::OPTION_NAME, $data, false );
+				update_option( self::OPTION_NAME, $data, false );
+
+				return true;
+			}
+		);
+	}
+
+	/**
+	 * Execute a state update within a lock.
+	 *
+	 * @param callable $callback Callback to execute while locked.
+	 * @return mixed Callback result or false if lock not acquired.
+	 */
+	private function with_state_lock( $callback ) {
+		$token = $this->acquire_state_lock();
+		if ( ! $token ) {
+			\Hypercart_Logger::warning(
+				'hypercart-server-monitor',
+				'Failed to acquire state lock',
+				array( 'lock' => self::LOCK_NAME )
+			);
+			return false;
+		}
+
+		try {
+			return call_user_func( $callback );
+		} finally {
+			$this->release_state_lock( $token );
+		}
+	}
+
+	/**
+	 * Acquire the state lock.
+	 *
+	 * @return string|false Token on success, false on failure.
+	 */
+	private function acquire_state_lock() {
+		$now       = \Hypercart_Time::now();
+		$token     = wp_generate_uuid4();
+		$lock_data = array(
+			'token'      => $token,
+			'expires_at' => $now + self::LOCK_TTL,
+		);
+
+		$acquired = add_option( self::LOCK_NAME, $lock_data, '', 'no' );
+		if ( ! $acquired ) {
+			$existing = get_option( self::LOCK_NAME );
+			$expired  = is_array( $existing ) && ! empty( $existing['expires_at'] )
+				? ( (int) $existing['expires_at'] <= $now )
+				: false;
+
+			if ( $expired && delete_option( self::LOCK_NAME ) ) {
+				$acquired = add_option( self::LOCK_NAME, $lock_data, '', 'no' );
+			}
+		}
+
+		return $acquired ? $token : false;
+	}
+
+	/**
+	 * Release the state lock.
+	 *
+	 * @param string $token Lock token.
+	 * @return bool True on success, false otherwise.
+	 */
+	private function release_state_lock( $token ) {
+		$lock_data = get_option( self::LOCK_NAME );
+		if ( ! is_array( $lock_data ) || ( $lock_data['token'] ?? null ) !== $token ) {
+			return false;
+		}
+
+		return delete_option( self::LOCK_NAME );
 	}
 }
-

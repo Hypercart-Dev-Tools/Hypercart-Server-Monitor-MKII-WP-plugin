@@ -14,11 +14,11 @@ Goal: Audit for reliability, maintainability, and best-practice adherence
 
 ## Phase 2: Persistence Safety
 - [x] F2: Add a repository lock or append/rotate strategy to prevent dropped samples and temp-file collisions.
-- [ ] F3: Split read-only access from archive/repair behavior to avoid mid-write renames.
+- [x] F3: Split read-only access from archive/repair behavior to avoid mid-write renames.
 
 ## Phase 3: State and Scheduling Consistency
-- [ ] F4: Add a state transition guard (version or compare-and-swap) to prevent lost updates.
-- [ ] F5: Centralize scheduling paths (activation/admin) to avoid drift.
+- [x] F4: Add a state transition guard (version or compare-and-swap) to prevent lost updates.
+- [x] F5: Centralize scheduling paths (activation/admin) to avoid drift.
 
 ## Phase 4: DRY and Reuse
 - [ ] F6: Consolidate metric collection into a shared service.
@@ -46,7 +46,7 @@ Goal: Audit for reliability, maintainability, and best-practice adherence
 # Fixes and Impact
 - F1 (completed): Implement an atomic lock with a token (`add_option`/`wp_cache_add`) and verify token on release. Impact: prevents overlapping runs and stale-lock deletion, reducing duplicate work. `src/Helpers/LockHelper.php`
 - F2 (completed): Add a repository lock (e.g., `flock` on a dedicated lockfile) or an append/rotate strategy. Impact: avoids dropped samples and temp-file collisions under concurrency. `src/Persistence/HealthRepository.php`
-- F3: Split “read” from “repair/rotate” and run repair only in the cron path. Impact: removes heavy I/O from admin views and avoids mid-write renames. `src/Persistence/HealthRepository.php`, `src/Admin/AdminController.php`
-- F4: Add state transition guards (version field or compare-and-swap). Impact: prevents lost updates when runs overlap. `src/Domain/FsmStateStore.php`, `src/Plugin.php`
-- F5: Centralize scheduling paths to a single entry point. Impact: reduces drift and hard-to-trace scheduling inconsistencies. `src/Plugin.php`, `src/Admin/AdminController.php`, `src/Services/SchedulerService.php`
+- F3 (completed): Split “read” from “repair/rotate” and run repair only in the cron path. Impact: removes heavy I/O from admin views and avoids mid-write renames. `src/Persistence/HealthRepository.php`, `src/Admin/AdminController.php`
+- F4 (completed): Add state transition guards (version field or compare-and-swap). Impact: prevents lost updates when runs overlap. `src/Domain/FsmStateStore.php`, `src/Plugin.php`
+- F5 (completed): Centralize scheduling paths to a single entry point. Impact: reduces drift and hard-to-trace scheduling inconsistencies. `src/Plugin.php`, `src/Admin/AdminController.php`, `src/Services/SchedulerService.php`
 - F6: Consolidate metric collection into a shared service. Impact: reduces duplicated logic and maintenance overhead. `src/Plugin.php`, `src/Admin/AdminController.php`

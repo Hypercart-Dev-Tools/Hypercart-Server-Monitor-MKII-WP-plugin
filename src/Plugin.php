@@ -277,7 +277,7 @@ class Plugin {
 			'hypercart-server-monitor',
 			'Plugin activation complete',
 			array(
-				'cron_scheduled' => wp_next_scheduled( 'hypercart_server_monitor_run' ) !== false,
+				'cron_scheduled' => $scheduler->is_scheduled(),
 			)
 		);
 	}
@@ -287,18 +287,15 @@ class Plugin {
 	 */
 	public static function deactivate() {
 		// Unschedule cron event.
-		$timestamp = wp_next_scheduled( 'hypercart_server_monitor_run' );
-		if ( $timestamp ) {
-			wp_unschedule_event( $timestamp, 'hypercart_server_monitor_run' );
-		}
+		$scheduler = new Services\SchedulerService();
+		$scheduler->unschedule();
 
 		\Hypercart_Logger::info(
 			'hypercart-server-monitor',
 			'Plugin deactivation complete',
 			array(
-				'cron_unscheduled' => wp_next_scheduled( 'hypercart_server_monitor_run' ) === false,
+				'cron_unscheduled' => ! $scheduler->is_scheduled(),
 			)
 		);
 	}
 }
-

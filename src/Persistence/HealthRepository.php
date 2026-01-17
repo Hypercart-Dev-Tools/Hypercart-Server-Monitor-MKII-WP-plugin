@@ -126,9 +126,10 @@ class HealthRepository {
 	/**
 	 * Read health data from JSON file.
 	 *
+	 * @param bool $allow_repair Whether to archive/repair corrupted files.
 	 * @return array Health data structure.
 	 */
-	public function read() {
+	public function read( $allow_repair = true ) {
 		$file_path = $this->get_file_path();
 
 		if ( ! file_exists( $file_path ) ) {
@@ -140,15 +141,26 @@ class HealthRepository {
 		// 1MB limit is a safety net against unexpected growth.
 		$file_size = filesize( $file_path );
 		if ( false === $file_size || $file_size > 1048576 ) {
-			\Hypercart_Logger::error(
-				'hypercart-server-monitor',
-				'JSON file too large, archiving and resetting',
-				array(
-					'file' => $file_path,
-					'size' => $file_size,
-				)
-			);
-			$this->archive_corrupted_file( $file_path );
+			if ( $allow_repair ) {
+				\Hypercart_Logger::error(
+					'hypercart-server-monitor',
+					'JSON file too large, archiving and resetting',
+					array(
+						'file' => $file_path,
+						'size' => $file_size,
+					)
+				);
+				$this->archive_corrupted_file( $file_path );
+			} else {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'JSON file too large, repair deferred',
+					array(
+						'file' => $file_path,
+						'size' => $file_size,
+					)
+				);
+			}
 			return $this->get_empty_structure();
 		}
 
@@ -164,8 +176,16 @@ class HealthRepository {
 
 		$data = json_decode( $content, true );
 		if ( null === $data ) {
-			// Corruption detected - archive and start fresh.
-			$this->archive_corrupted_file( $file_path );
+			// Corruption detected - optionally archive and start fresh.
+			if ( $allow_repair ) {
+				$this->archive_corrupted_file( $file_path );
+			} else {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'JSON file corrupted, repair deferred',
+					array( 'file' => $file_path )
+				);
+			}
 			return $this->get_empty_structure();
 		}
 
@@ -381,7 +401,7 @@ class HealthRepository {
 			$status['size_kb']      = round( $status['size_bytes'] / 1024, 2 );
 			$status['modified_utc'] = filemtime( $file_path );
 
-			$data                    = $this->read();
+			$data                    = $this->read( false );
 			$status['sample_count']  = count( $data['samples'] ?? array() );
 
 			if ( ! empty( $data['samples'] ) ) {

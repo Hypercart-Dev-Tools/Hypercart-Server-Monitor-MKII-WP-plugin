@@ -211,7 +211,7 @@ class AdminController {
 	 * Render Dashboard tab.
 	 */
 	public function render_tab_dashboard() {
-		$data           = $this->repository->read();
+		$data           = $this->repository->read( false );
 		$samples        = $data['samples'] ?? array();
 		$latest_sample  = ! empty( $samples ) ? end( $samples ) : null;
 		$state_data     = $this->state_store->get_state_data();
@@ -403,7 +403,7 @@ class AdminController {
 
 		try {
 			// Get most recent sample from JSON.
-			$data = $this->repository->read();
+			$data = $this->repository->read( false );
 
 			// Debug logging.
 			\Hypercart_Logger::debug(
@@ -482,24 +482,23 @@ class AdminController {
 		}
 
 		try {
-			// Check if already scheduled.
-			$next_run = wp_next_scheduled( 'hypercart_server_monitor_run' );
-			if ( $next_run ) {
+			$scheduler = new \Hypercart_Server_Monitor\Services\SchedulerService();
+			$next_run  = $scheduler->get_next_run();
+			if ( $scheduler->is_scheduled() ) {
 				wp_send_json_error(
 					array(
 						'message'  => 'Cron is already scheduled',
-						'next_run' => \Hypercart_Time::format( 'Y-m-d H:i:s', $next_run ),
+						'next_run' => $next_run ? \Hypercart_Time::format( 'Y-m-d H:i:s', $next_run ) : null,
 					)
 				);
 			}
 
 			// Schedule cron.
-			$scheduler = new \Hypercart_Server_Monitor\Services\SchedulerService( $this->state_store );
 			$scheduler->schedule();
 
 			// Verify it was scheduled.
-			$next_run = wp_next_scheduled( 'hypercart_server_monitor_run' );
-			if ( ! $next_run ) {
+			$next_run = $scheduler->get_next_run();
+			if ( ! $scheduler->is_scheduled() || ! $next_run ) {
 				throw new \Exception( 'Failed to schedule cron. Check logs for details.' );
 			}
 
@@ -547,4 +546,3 @@ class AdminController {
 		);
 	}
 }
-
