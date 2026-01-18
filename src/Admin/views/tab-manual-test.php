@@ -194,7 +194,7 @@ jQuery(document).ready(function($) {
 
 					// Iterations row.
 					html += '<tr>';
-					html += '<td><?php esc_html_e( 'Iterations', 'hypercart-server-monitor' ); ?></td>';
+					html += '<td><?php esc_html_e( 'Iterations (per run)', 'hypercart-server-monitor' ); ?></td>';
 					if (rawMetrics.benchmark && rawMetrics.benchmark.supported) {
 						html += '<td>' + (rawMetrics.benchmark.iterations || 0) + '</td>';
 					} else {

@@ -77,8 +77,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<td><?php echo esc_html( number_format( $raw_metrics['benchmark']['max_time_ms'] ?? 0, 2 ) ); ?> ms</td>
 					</tr>
 					<tr>
-						<td><?php esc_html_e( 'Iterations', 'hypercart-server-monitor' ); ?></td>
+						<td><?php esc_html_e( 'Iterations (per run)', 'hypercart-server-monitor' ); ?></td>
 						<td><?php echo esc_html( $raw_metrics['benchmark']['iterations'] ?? 0 ); ?></td>
+					</tr>
+					<tr>
+						<td><?php esc_html_e( 'Total Samples', 'hypercart-server-monitor' ); ?></td>
+						<td><?php echo esc_html( count( $samples ) ); ?></td>
 					</tr>
 				</tbody>
 			</table>
@@ -139,9 +143,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<th><?php esc_html_e( 'Timestamp', 'hypercart-server-monitor' ); ?></th>
 						<th><?php esc_html_e( 'Score', 'hypercart-server-monitor' ); ?></th>
 						<th><?php esc_html_e( 'Label', 'hypercart-server-monitor' ); ?></th>
-						<th><?php esc_html_e( 'Benchmark 1 (ms)', 'hypercart-server-monitor' ); ?></th>
-						<th><?php esc_html_e( 'Benchmark 2 (ms)', 'hypercart-server-monitor' ); ?></th>
-						<th><?php esc_html_e( 'Benchmark 3 (ms)', 'hypercart-server-monitor' ); ?></th>
+						<th><?php esc_html_e( 'Run 1 (ms)', 'hypercart-server-monitor' ); ?></th>
+						<th><?php esc_html_e( 'Run 2 (ms)', 'hypercart-server-monitor' ); ?></th>
+						<th><?php esc_html_e( 'Run 3 (ms)', 'hypercart-server-monitor' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
