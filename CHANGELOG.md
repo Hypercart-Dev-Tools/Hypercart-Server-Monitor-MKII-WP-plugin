@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **SEO Control for Shortcode**: The `[hypercart_server_monitor_dashboard]` shortcode now prevents the page from being indexed by search engines by default.
-  - A `noindex` meta tag is added to the page `<head>` using the `wp_no_robots` filter.
+- A `noindex` meta tag is added to the page `<head>` via a `wp_head` action hooked during `wp`.
   - This can be disabled by using the attribute `[hypercart_server_monitor_dashboard noindex="false"]`.
   - A notice is displayed on the frontend dashboard to inform the user that indexing is disabled.
   - **Files Modified**: `src/Plugin.php`, `src/Frontend/views/shortcode-dashboard.php`
@@ -37,6 +37,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Diagnostics
 - Added a Debug tab breaker self-test button with results output. `src/Admin/AdminController.php`, `src/Admin/views/tab-debug.php`, `assets/admin.js`
+
+## [0.4.9] - 2026-01-18
+
+### Fixed
+- **Fixed**: False positive dependency check for Hypercart Helper
+- **Location**: `wp-server-performance-monitor.php` lines 76-91
+- **Issue**: Plugin showed "missing dependency" error even when Helper v1.1.0 was active and working
+- **Root Cause**: Dependency check was too strict, checking for classes without verifying they were actually missing
+- **Fix**: Improved dependency detection logic
+  - Core check: Only requires `Hypercart_Time` and `Hypercart_Logger` (v1.0.0+) - BLOCKING
+  - Feature check: Only shows version notice if BOTH version < 1.1.2 AND classes are actually missing - NON-BLOCKING
+  - Smart detection: Checks actual class existence, not just version number
+- **Result**: Plugin loads successfully if core classes exist, regardless of version number
+- **Behavior**:
+  - Helper missing: Plugin blocks with error notice
+  - Helper v1.0.0+ with core classes: Plugin loads successfully
+  - Helper < v1.1.2 AND missing Admin Tabs/Charts: Shows upgrade notice (non-blocking)
+  - Helper v1.1.2+ OR has Admin Tabs/Charts: No notices
 
 ## [0.4.8] - 2026-01-18
 
@@ -230,7 +248,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AdminController**: Updated for single metric
 - **Dashboard Tab**: Shows benchmark details (avg/min/max/iterations)
 - **Manual Test Tab**: Shows benchmark execution times instead of system metrics
-- **Removed Files**: `CpuLoadCollector.php`, `MemoryCollector.php`, `DiskCollector.php` (deprecated)
+- **Deprecated**: `CpuLoadCollector.php`, `MemoryCollector.php`, `DiskCollector.php` are no longer used but still present in `src/Metrics`.
 
 #### Benefits
 - ✅ Works on ALL environments (Local, staging, production, any OS)
@@ -713,7 +731,7 @@ wp-server-performance-monitor/
 - **AdminController**: Updated for single metric
 - **Dashboard Tab**: Shows benchmark details (avg/min/max/iterations)
 - **Manual Test Tab**: Shows benchmark execution times instead of system metrics
-- **Removed Files**: `CpuLoadCollector.php`, `MemoryCollector.php`, `DiskCollector.php` (deprecated)
+- **Deprecated**: `CpuLoadCollector.php`, `MemoryCollector.php`, `DiskCollector.php` are no longer used but still present in `src/Metrics`.
 
 #### Benefits
 - ✅ Works on ALL environments (Local, staging, production, any OS)

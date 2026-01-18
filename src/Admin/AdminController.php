@@ -279,7 +279,19 @@ class AdminController {
 		$file_status    = $this->repository->get_file_status();
 		$lock_status    = LockHelper::get_status();
 		$cron_status    = $this->get_cron_status();
+		$data_dir       = dirname( $file_status['path'] );
 		$self_tests     = array(
+			array(
+				'label'  => __( 'Log Handling and File Visibility', 'hypercart-server-monitor' ),
+				'status' => ( file_exists( $data_dir . '/.htaccess' ) && file_exists( $data_dir . '/index.html' ) ) ? 'ok' : 'fail',
+				'detail' => ( file_exists( $data_dir . '/.htaccess' ) && file_exists( $data_dir . '/index.html' ) )
+					? __( 'Security files (.htaccess and index.html) are present.', 'hypercart-server-monitor' )
+					: sprintf(
+						/* translators: %s: link to security readme */
+						__( 'Warning: One or more security files are missing. See %s for details.', 'hypercart-server-monitor' ),
+						'<a href="' . esc_url( plugins_url( '../README-SECURITY.md', __FILE__ ) ) . '">README-SECURITY.md</a>'
+					),
+			),
 			array(
 				'label'  => __( 'Manual test AJAX action registered', 'hypercart-server-monitor' ),
 				'status' => has_action( 'wp_ajax_hsm_run_manual_test' ) ? 'ok' : 'fail',

@@ -22,7 +22,7 @@ exit;
 }
 
 // Define plugin constants.
-define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.4.8' );
+define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.4.9' );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_FILE', __FILE__ );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -74,17 +74,20 @@ require_once HYPERCART_SERVER_MONITOR_PLUGIN_DIR . 'autoload.php';
  * Initialize the plugin.
  */
 function hypercart_server_monitor_init() {
-// Check if required classes exist.
-if ( ! class_exists( 'Hypercart_Time' ) || ! class_exists( 'Hypercart_Logger' ) || ! class_exists( 'Hypercart_Admin_Tabs' ) ) {
+// Check if core required classes exist (Hypercart Helper v1.0.0+).
+if ( ! class_exists( 'Hypercart_Time' ) || ! class_exists( 'Hypercart_Logger' ) ) {
 add_action( 'admin_notices', 'hypercart_server_monitor_missing_dependency_notice' );
 return;
 }
 
-// Check minimum version (1.1.2+ for Admin Tabs and Charts).
+// Only show version notice if BOTH conditions are true:
+// 1. Version number is defined AND less than 1.1.2
+// 2. Required classes are actually missing
 if ( defined( 'HYPERCART_HELPER_VERSION' ) &&
-     version_compare( HYPERCART_HELPER_VERSION, '1.1.2', '<' ) ) {
+     version_compare( HYPERCART_HELPER_VERSION, '1.1.2', '<' ) &&
+     ( ! class_exists( 'Hypercart_Admin_Tabs' ) || ! class_exists( 'Hypercart_Charts' ) ) ) {
 add_action( 'admin_notices', 'hypercart_server_monitor_version_mismatch_notice' );
-return;
+// Don't return - allow plugin to load with degraded functionality.
 }
 
 // Log plugin initialization.
