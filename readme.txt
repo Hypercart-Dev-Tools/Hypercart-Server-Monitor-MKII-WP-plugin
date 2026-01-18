@@ -4,7 +4,7 @@ Tags: monitoring, performance, server, health, metrics
 Requires at least: 5.8
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 0.4.1
+Stable tag: 0.4.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -89,6 +89,24 @@ The JSON file keeps the last 24 hours of metrics (auto-pruned). Log files persis
 Yes! The synthetic PHP benchmark works on all operating systems and environments (Local, staging, production, Windows, macOS, Linux) because it only uses standard PHP functions.
 
 == Changelog ==
+
+= 0.4.8 - 2026-01-18 =
+* Improved: Hide noindex notice from non-admin users
+* Security: Reduced information disclosure to public users
+* Tested: Verified noindex="false" disables meta tag
+* Tested: Verified notice hidden from anonymous users
+
+= 0.4.7 - 2026-01-18 =
+* Fixed: Noindex meta tag timing issue in frontend shortcode
+* Fixed: Meta tag now correctly appears in <head> when noindex="true"
+* Improved: Pre-parse shortcode during 'wp' action for proper timing
+* Tested: Verified noindex functionality via curl
+
+= 0.4.2 - 2026-01-18 =
+* Security: Fixed DOM-based XSS vulnerability in Manual Test tab
+* Security: Added escapeHtml() function to sanitize dynamic content in JavaScript
+* Security: Prevents HTML/JavaScript injection via server response data
+* Improved: Client-side defense-in-depth for admin dashboard
 
 = 0.4.1 - 2026-01-11 =
 * Security: Fixed directory traversal vulnerability in log viewer (CRITICAL)

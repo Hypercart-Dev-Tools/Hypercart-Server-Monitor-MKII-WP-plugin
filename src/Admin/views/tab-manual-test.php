@@ -51,6 +51,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <script type="text/javascript">
 jQuery(document).ready(function($) {
+	/**
+	 * Escape HTML to prevent XSS when building dynamic HTML strings.
+	 *
+	 * @param {string} text Text to escape.
+	 * @return {string} Escaped text safe for HTML insertion.
+	 */
+	function escapeHtml(text) {
+		var map = {
+			'&': '&amp;',
+			'<': '&lt;',
+			'>': '&gt;',
+			'"': '&quot;',
+			"'": '&#039;'
+		};
+		return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+	}
+
 	$('#hsm-run-test').on('click', function() {
 		var $button = $(this);
 		var $spinner = $('#hsm-test-spinner');
@@ -121,16 +138,16 @@ jQuery(document).ready(function($) {
 						if (data.warnings && data.warnings.length > 0) {
 							html += '<div class="notice notice-warning inline"><ul>';
 							for (var i = 0; i < data.warnings.length; i++) {
-								html += '<li>' + data.warnings[i] + '</li>';
+								html += '<li>' + escapeHtml(data.warnings[i]) + '</li>';
 							}
 							html += '</ul></div>';
 						}
 
 					html += '<div class="hsm-score-display ' + scoreClass + '">';
 					html += '<div class="hsm-score-number">' + score.combined.toFixed(1) + '</div>';
-					html += '<div class="hsm-score-label">' + score.label + '</div>';
+					html += '<div class="hsm-score-label">' + escapeHtml(score.label) + '</div>';
 					html += '</div>';
-					html += '<p class="hsm-timestamp"><?php esc_html_e( 'Completed at:', 'hypercart-server-monitor' ); ?> ' + data.timestamp + '</p>';
+					html += '<p class="hsm-timestamp"><?php esc_html_e( 'Completed at:', 'hypercart-server-monitor' ); ?> ' + escapeHtml(data.timestamp) + '</p>';
 					html += '<p><?php esc_html_e( 'Duration:', 'hypercart-server-monitor' ); ?> ' + data.duration_ms.toFixed(2) + ' ms</p>';
 
 					// Show logging status.

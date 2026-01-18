@@ -98,11 +98,110 @@ class Plugin {
 		// Register cron hook.
 		add_action( 'hypercart_server_monitor_run', array( $this, 'run_monitoring' ) );
 
+		// Register read-only dashboard shortcode.
+		add_shortcode( 'hypercart_server_monitor_dashboard', array( $this, 'render_readonly_dashboard_shortcode' ) );
+
+		// Detect shortcode early and add noindex meta tag if needed.
+		add_action( 'wp', array( $this, 'detect_shortcode_and_add_noindex' ) );
+
 		// Add settings link on plugins page.
 		add_filter(
 			'plugin_action_links_' . HYPERCART_SERVER_MONITOR_PLUGIN_BASENAME,
 			array( $this, 'add_settings_link' )
 		);
+	}
+
+	/**
+	 * Detect shortcode in post content and add noindex meta tag if needed.
+	 *
+	 * This runs during the 'wp' action, which fires after the query is set up
+	 * but before wp_head, allowing us to add the noindex meta tag in time.
+	 */
+	public function detect_shortcode_and_add_noindex() {
+		global $post;
+
+		// Only run on singular posts/pages.
+		if ( ! is_singular() || ! is_a( $post, 'WP_Post' ) ) {
+			return;
+		}
+
+		// Check if the shortcode exists in the post content.
+		if ( ! has_shortcode( $post->post_content, 'hypercart_server_monitor_dashboard' ) ) {
+			return;
+		}
+
+		// Parse shortcode attributes to check noindex setting.
+		$pattern = get_shortcode_regex( array( 'hypercart_server_monitor_dashboard' ) );
+		if ( preg_match_all( '/' . $pattern . '/s', $post->post_content, $matches ) ) {
+			foreach ( $matches[0] as $index => $shortcode_match ) {
+				// Extract attributes from the shortcode.
+				$atts = shortcode_parse_atts( $matches[3][ $index ] );
+				if ( ! is_array( $atts ) ) {
+					$atts = array();
+				}
+
+				// Check noindex attribute (default to 'true').
+				$noindex = isset( $atts['noindex'] ) ? $atts['noindex'] : 'true';
+				$is_noindex_enabled = wp_validate_boolean( $noindex );
+
+				if ( $is_noindex_enabled ) {
+					// Add noindex meta tag via wp_head action.
+					add_action(
+						'wp_head',
+						function () {
+							echo '<meta name="robots" content="noindex, nofollow" />' . "\n";
+						},
+						1
+					);
+					// Only process the first shortcode instance.
+					break;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Render the read-only dashboard shortcode.
+	 *
+	 * @param array $atts Shortcode attributes.
+	 * @return string Shortcode output.
+	 */
+	public function render_readonly_dashboard_shortcode( $atts ) {
+		// START V2 NO-INDEX RULE - DO NOT REFACTOR
+		// Note: Noindex meta tag is added earlier via detect_shortcode_and_add_noindex()
+		// which runs during 'wp' action (before wp_head). This ensures proper timing.
+		$atts = shortcode_atts(
+			array(
+				'noindex' => 'true', // Default to true for safety.
+			),
+			$atts,
+			'hypercart_server_monitor_dashboard'
+		);
+
+		$is_noindex_enabled = wp_validate_boolean( $atts['noindex'] );
+		// END V2 NO-INDEX RULE
+
+		// Safeguard: this view must remain read-only (no writes or state changes).
+		$repository    = new Persistence\HealthRepository();
+		$data          = $repository->read( false );
+		$samples       = $data['samples'] ?? array();
+		$latest_sample = ! empty( $samples ) ? end( $samples ) : null;
+
+		if ( class_exists( 'Hypercart_Charts' ) ) {
+			\Hypercart_Charts::register_assets();
+			\Hypercart_Charts::enqueue( array( 'context' => 'hypercart-server-monitor-frontend' ) );
+		}
+
+		wp_enqueue_style(
+			'hypercart-server-monitor-frontend',
+			plugins_url( 'assets/admin.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			array(),
+			HYPERCART_SERVER_MONITOR_VERSION
+		);
+
+		ob_start();
+		include __DIR__ . '/Frontend/views/shortcode-dashboard.php';
+		return ob_get_clean();
 	}
 
 	/**

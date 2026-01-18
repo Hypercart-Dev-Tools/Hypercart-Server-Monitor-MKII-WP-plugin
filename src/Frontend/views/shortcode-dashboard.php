@@ -1,11 +1,10 @@
 <?php
 /**
- * Dashboard Tab View
+ * Frontend Dashboard Shortcode (Read-only)
  *
  * @package Hypercart_Server_Monitor
  * @var array|null $latest_sample Latest health sample.
  * @var array      $samples       All samples (24h).
- * @var array      $state_data    FSM state data.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,9 +12,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 
-<div class="hsm-dashboard">
+<?php
+// Safeguard: this frontend view must remain read-only (no writes or actions).
+?>
+
+<div class="hsm-dashboard hsm-dashboard-readonly">
+	<?php if ( isset( $is_noindex_enabled ) && $is_noindex_enabled && current_user_can( 'manage_options' ) ) : ?>
+		<div class="notice notice-warning inline">
+			<p>
+				<strong><?php esc_html_e( 'Search Engine Indexing Disabled', 'hypercart-server-monitor' ); ?></strong><br />
+				<?php esc_html_e( 'This page is not indexed by search engines. This setting can be changed by adding noindex="false" to the shortcode.', 'hypercart-server-monitor' ); ?>
+			</p>
+		</div>
+	<?php endif; ?>
+
 	<div class="notice notice-info inline">
-		<p><?php esc_html_e( 'Frontend read-only embed: use [hypercart_server_monitor_dashboard]', 'hypercart-server-monitor' ); ?></p>
+		<p><?php esc_html_e( 'Read-only dashboard view', 'hypercart-server-monitor' ); ?></p>
 	</div>
 	<!-- Current Health Score -->
 	<div class="hsm-card hsm-health-score">
@@ -111,7 +123,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			if ( ! empty( $chart_points ) ) {
 				echo \Hypercart_Charts::render_canvas(
 					array(
-						'id'       => 'hsm-health-chart',
+						'id'       => 'hsm-health-chart-frontend',
 						'title'    => __( 'Health Score Over Time', 'hypercart-server-monitor' ),
 						'datasets' => array(
 							array(
@@ -146,7 +158,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</thead>
 				<tbody>
 					<?php
-					// Show last 10 samples in reverse chronological order.
 					$recent_samples = array_slice( array_reverse( $samples ), 0, 10 );
 					foreach ( $recent_samples as $sample ) :
 						$ts    = isset( $sample['ts_utc'] ) ? strtotime( $sample['ts_utc'] ) : null;
