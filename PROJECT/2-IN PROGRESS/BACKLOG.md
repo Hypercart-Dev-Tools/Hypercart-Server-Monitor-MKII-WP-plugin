@@ -2,9 +2,9 @@
 ==========
 
 **Add No-Index to Shortode**
-**STATUS:** NOT STARTED
+**STATUS:** COMPLETED
 
-**Shortcode Raadonly View** 
+**Shortcode Raad-only View** 
 **STATUS:** COMPLETED
 
 Print Table "repeating" (echoing?) the Dashboard onto front end WP page but with proper security restricitons.

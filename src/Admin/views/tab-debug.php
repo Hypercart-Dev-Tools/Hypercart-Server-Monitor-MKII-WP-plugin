@@ -160,9 +160,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<th><?php echo esc_html( $test['label'] ); ?></th>
 						<td>
 							<?php if ( 'ok' === $test['status'] ) : ?>
-								<span class="hsm-status-ok"><?php echo esc_html( $test['detail'] ); ?></span>
+								<span class="hsm-status-ok"><?php echo wp_kses_post( $test['detail'] ); ?></span>
 							<?php else : ?>
-								<span class="hsm-status-error"><?php echo esc_html( $test['detail'] ); ?></span>
+								<span class="hsm-status-error"><?php echo wp_kses_post( $test['detail'] ); ?></span>
 							<?php endif; ?>
 						</td>
 					</tr>

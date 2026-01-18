@@ -62,9 +62,15 @@ class AdminController {
 	 * Register admin menu.
 	 */
 	public function register_menu() {
+		$page_title = sprintf(
+			/* translators: %s: plugin version */
+			__( 'Hypercart - Server Monitor MKII v%s', 'hypercart-server-monitor' ),
+			HYPERCART_SERVER_MONITOR_VERSION
+		);
+		$menu_title = __( 'Hypercart - Server Monitor MKII', 'hypercart-server-monitor' );
 		add_menu_page(
-			__( 'Server Monitor', 'hypercart-server-monitor' ),
-			__( 'Server Monitor', 'hypercart-server-monitor' ),
+			$page_title,
+			$menu_title,
 			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' ),
@@ -139,7 +145,11 @@ class AdminController {
 		}
 
 		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'Server Monitor', 'hypercart-server-monitor' ) . '</h1>';
+		echo '<h1>' . esc_html( sprintf(
+			/* translators: %s: plugin version */
+			__( 'Hypercart - Server Monitor MKII v%s', 'hypercart-server-monitor' ),
+			HYPERCART_SERVER_MONITOR_VERSION
+		) ) . '</h1>';
 
 		\Hypercart_Admin_Tabs::render(
 			self::PAGE_SLUG,
@@ -194,7 +204,15 @@ class AdminController {
 	private function render_missing_helper_notice() {
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Server Monitor', 'hypercart-server-monitor' ); ?></h1>
+			<h1>
+				<?php
+				echo esc_html( sprintf(
+					/* translators: %s: plugin version */
+					__( 'Hypercart - Server Monitor MKII v%s', 'hypercart-server-monitor' ),
+					HYPERCART_SERVER_MONITOR_VERSION
+				) );
+				?>
+			</h1>
 			<div class="notice notice-error">
 				<p>
 					<strong><?php esc_html_e( 'Hypercart Helper Required', 'hypercart-server-monitor' ); ?></strong>
@@ -288,8 +306,8 @@ class AdminController {
 					? __( 'Security files (.htaccess and index.html) are present.', 'hypercart-server-monitor' )
 					: sprintf(
 						/* translators: %s: link to security readme */
-						__( 'Warning: One or more security files are missing. See %s for details.', 'hypercart-server-monitor' ),
-						'<a href="' . esc_url( plugins_url( '../README-SECURITY.md', __FILE__ ) ) . '">README-SECURITY.md</a>'
+						__( 'Note: Please review the SECURITY-README viewer for guidance. See %s.', 'hypercart-server-monitor' ),
+						'<a href="' . esc_url( admin_url( 'admin.php?page=hypercart-security-guide' ) ) . '">SECURITY-README viewer</a>'
 					),
 			),
 			array(
