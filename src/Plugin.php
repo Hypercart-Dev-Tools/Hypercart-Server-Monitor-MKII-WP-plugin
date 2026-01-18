@@ -109,6 +109,7 @@ class Plugin {
 	 * Run monitoring task (called by cron).
 	 */
 	public function run_monitoring() {
+		// Safeguard: keep breaker gating centralized via the FSM store.
 		$this->run_monitoring_internal(
 			array(
 				'send_email'             => true,
@@ -128,6 +129,7 @@ class Plugin {
 	 * @return array Result payload for UI.
 	 */
 	public function run_manual_test() {
+		// Safeguard: manual tests must use the same breaker path as scheduled runs.
 		return $this->run_monitoring_internal(
 			array(
 				'send_email'             => false,
@@ -143,6 +145,9 @@ class Plugin {
 
 	/**
 	 * Internal monitoring execution path.
+	 *
+	 * Note: This sequence is the single authoritative run path; avoid refactors
+	 * unless the FSM breaker flow and manual test integration are updated together.
 	 *
 	 * @param array $options Run options.
 	 * @return array Result payload for UI or diagnostics.

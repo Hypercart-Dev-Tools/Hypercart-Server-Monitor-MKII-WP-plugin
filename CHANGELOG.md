@@ -5,19 +5,29 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.1] - 2026-01-11
-
 ## [0.4.2] - 2026-01-17
 
 ### Security
 - Added capability checks before rendering admin notices. `wp-server-performance-monitor.php`
 - Added capability check before enqueuing admin assets. `src/Admin/AdminController.php`
 
+- Added Self Tests for Circuit Breaker
+
 ## [0.4.3] - 2026-01-18
 
 ### Reliability
 - Centralized breaker gating in the FSM store, including cooldown handling and half-open probe runs. `src/Domain/FsmStateStore.php`, `src/Plugin.php`
 - Manual tests now follow the same breaker rules as scheduled runs. `src/Plugin.php`, `src/Admin/AdminController.php`
+
+## [0.4.4] - 2026-01-18
+
+### Reliability
+- Added a benchmark timeout with a filterable max runtime. `src/Metrics/BenchmarkCollector.php`
+
+## [0.4.5] - 2026-01-18
+
+### Diagnostics
+- Added a Debug tab breaker self-test button with results output. `src/Admin/AdminController.php`, `src/Admin/views/tab-debug.php`, `assets/admin.js`
 
 ### Security Fixes - Audit Response
 

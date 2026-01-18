@@ -15,6 +15,11 @@ namespace Hypercart_Server_Monitor\Metrics;
  */
 class BenchmarkCollector {
 	/**
+	 * Max benchmark runtime (seconds).
+	 */
+	const MAX_RUNTIME_SECONDS = 10;
+
+	/**
 	 * Number of iterations to run.
 	 *
 	 * @var int
@@ -33,10 +38,14 @@ class BenchmarkCollector {
 			array( 'iterations' => $this->iterations )
 		);
 
+		$benchmark_start = microtime( true );
+		$max_runtime = (int) apply_filters( 'hypercart_server_monitor_benchmark_timeout', self::MAX_RUNTIME_SECONDS );
+		$max_runtime = max( 1, $max_runtime );
+
 		$times = array();
 
 		for ( $i = 0; $i < $this->iterations; $i++ ) {
-			$start_time = microtime( true );
+			$iteration_start = microtime( true );
 
 			// Run benchmark tasks.
 			$this->run_math_operations();
@@ -44,7 +53,19 @@ class BenchmarkCollector {
 			$this->run_array_operations();
 
 			$end_time = microtime( true );
-			$times[]  = ( $end_time - $start_time ) * 1000; // Convert to milliseconds.
+			$times[]  = ( $end_time - $iteration_start ) * 1000; // Convert to milliseconds.
+
+			if ( ( microtime( true ) - $benchmark_start ) > $max_runtime ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Benchmark timeout exceeded',
+					array(
+						'max_seconds' => $max_runtime,
+						'elapsed_ms'  => round( ( microtime( true ) - $benchmark_start ) * 1000, 2 ),
+					)
+				);
+				throw new \Exception( 'Benchmark timeout exceeded' );
+			}
 		}
 
 		$avg_time = array_sum( $times ) / count( $times );
@@ -120,4 +141,3 @@ class BenchmarkCollector {
 		return array_sum( $mapped );
 	}
 }
-

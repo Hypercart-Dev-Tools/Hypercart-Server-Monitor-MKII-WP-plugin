@@ -54,6 +54,7 @@ class AdminController {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_hsm_run_manual_test', array( $this, 'ajax_run_manual_test' ) );
 		add_action( 'wp_ajax_hsm_send_test_email', array( $this, 'ajax_send_test_email' ) );
+		add_action( 'wp_ajax_hsm_run_breaker_self_test', array( $this, 'ajax_run_breaker_self_test' ) );
 		add_action( 'wp_ajax_hsm_schedule_cron', array( $this, 'ajax_schedule_cron' ) );
 	}
 
@@ -123,6 +124,7 @@ class AdminController {
 				'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
 				'nonce'      => wp_create_nonce( 'hsm_manual_test' ),
 				'emailNonce' => wp_create_nonce( 'hsm_send_test_email' ),
+				'debugNonce' => wp_create_nonce( 'hsm_debug' ),
 			)
 		);
 	}
@@ -277,6 +279,40 @@ class AdminController {
 		$file_status    = $this->repository->get_file_status();
 		$lock_status    = LockHelper::get_status();
 		$cron_status    = $this->get_cron_status();
+		$self_tests     = array(
+			array(
+				'label'  => __( 'Manual test AJAX action registered', 'hypercart-server-monitor' ),
+				'status' => has_action( 'wp_ajax_hsm_run_manual_test' ) ? 'ok' : 'fail',
+				'detail' => has_action( 'wp_ajax_hsm_run_manual_test' ) ? __( 'Registered', 'hypercart-server-monitor' ) : __( 'Missing', 'hypercart-server-monitor' ),
+			),
+			array(
+				'label'  => __( 'Breaker probe methods available', 'hypercart-server-monitor' ),
+				'status' => method_exists( $this->state_store, 'record_probe_success' ) && method_exists( $this->state_store, 'record_probe_failure' ) ? 'ok' : 'fail',
+				'detail' => method_exists( $this->state_store, 'record_probe_success' ) && method_exists( $this->state_store, 'record_probe_failure' )
+					? __( 'Available', 'hypercart-server-monitor' )
+					: __( 'Missing', 'hypercart-server-monitor' ),
+			),
+			array(
+				'label'  => __( 'Breaker cooldown field present', 'hypercart-server-monitor' ),
+				'status' => array_key_exists( 'cooldown_until', $state_data ) ? 'ok' : 'fail',
+				'detail' => array_key_exists( 'cooldown_until', $state_data ) ? __( 'Present', 'hypercart-server-monitor' ) : __( 'Missing', 'hypercart-server-monitor' ),
+			),
+			array(
+				'label'  => __( 'Breaker half-open state available', 'hypercart-server-monitor' ),
+				'status' => method_exists( $this->state_store, 'begin_run' ) ? 'ok' : 'fail',
+				'detail' => method_exists( $this->state_store, 'begin_run' ) ? __( 'Available', 'hypercart-server-monitor' ) : __( 'Missing', 'hypercart-server-monitor' ),
+			),
+			array(
+				'label'  => __( 'Manual test runner available', 'hypercart-server-monitor' ),
+				'status' => method_exists( '\Hypercart_Server_Monitor\Plugin', 'run_manual_test' ) ? 'ok' : 'fail',
+				'detail' => method_exists( '\Hypercart_Server_Monitor\Plugin', 'run_manual_test' ) ? __( 'Available', 'hypercart-server-monitor' ) : __( 'Missing', 'hypercart-server-monitor' ),
+			),
+			array(
+				'label'  => __( 'Manual test view present', 'hypercart-server-monitor' ),
+				'status' => file_exists( __DIR__ . '/views/tab-manual-test.php' ) ? 'ok' : 'fail',
+				'detail' => file_exists( __DIR__ . '/views/tab-manual-test.php' ) ? __( 'Found', 'hypercart-server-monitor' ) : __( 'Missing', 'hypercart-server-monitor' ),
+			),
+		);
 
 		require __DIR__ . '/views/tab-debug.php';
 	}
@@ -312,6 +348,7 @@ class AdminController {
 
 		// Run manual monitoring through the shared FSM path.
 		try {
+			// Safeguard: do not bypass the FSM breaker flow from admin.
 			$result = \Hypercart_Server_Monitor\Plugin::get_instance()->run_manual_test();
 			if ( empty( $result['success'] ) ) {
 				throw new \Exception( $result['message'] ?? 'Manual test failed. Check logs for details.' );
@@ -431,6 +468,36 @@ class AdminController {
 				)
 			);
 		}
+	}
+
+	/**
+	 * AJAX handler for breaker self test.
+	 */
+	public function ajax_run_breaker_self_test() {
+		// Verify nonce.
+		check_ajax_referer( 'hsm_debug', 'nonce' );
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+		}
+
+		$result = $this->state_store->run_breaker_self_test();
+		if ( empty( $result['success'] ) ) {
+			wp_send_json_error(
+				array(
+					'message' => $result['message'] ?? 'Breaker self test failed.',
+					'steps'   => $result['steps'] ?? array(),
+				)
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'message' => $result['message'] ?? 'Breaker self test completed.',
+				'steps'   => $result['steps'] ?? array(),
+			)
+		);
 	}
 
 	/**

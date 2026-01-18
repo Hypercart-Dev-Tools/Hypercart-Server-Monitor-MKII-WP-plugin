@@ -323,6 +323,13 @@ WP-Cron depends on site traffic. For e-commerce, traffic is usually sufficient, 
 **Benefits:**
 * See current metrics instantly without waiting for cron
 * Test scoring logic without polluting data
+
+### Benchmark Timeout (Safety)
+The synthetic benchmark enforces a maximum runtime to prevent runaway CPU usage.
+Override with the `hypercart_server_monitor_benchmark_timeout` filter (seconds).
+
+**Risks:** Setting this too low can cause false failures and trip the breaker; too high can allow excessive CPU use.
+**Recommended overrides:** 10-20s on shared hosting; 5-10s on production with tight CPU budgets; avoid values below 3s.
 * Verify collectors are working
 * No side effects (no JSON write, no email)
 

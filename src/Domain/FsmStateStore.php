@@ -128,6 +128,9 @@ class FsmStateStore {
 	/**
 	 * Determine whether a run is allowed based on breaker state.
 	 *
+	 * Note: The circuit breaker flow is centralized here; avoid refactoring
+	 * without updating the monitoring run sequence and tests.
+	 *
 	 * @param bool $allow_probe Whether to allow a probe run after cooldown.
 	 * @return array Result with allowed/probe/message keys.
 	 */
@@ -309,6 +312,102 @@ class FsmStateStore {
 				$this->update_state_data_locked( $data );
 
 				return true;
+			}
+		);
+	}
+
+	/**
+	 * Run a breaker self test and restore the original state.
+	 *
+	 * @return array Test result payload.
+	 */
+	public function run_breaker_self_test() {
+		return $this->with_state_lock(
+			function () {
+				$data          = $this->get_state_data();
+				$current_state = $data['state'] ?? 'idle';
+
+				if ( in_array( $current_state, array( 'running', 'writing', 'emailing' ), true ) ) {
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Breaker self test blocked during active run',
+						array( 'state' => $current_state )
+					);
+					return array(
+						'success' => false,
+						'message' => __( 'Breaker self test blocked during an active run.', 'hypercart-server-monitor' ),
+					);
+				}
+
+				$original = $data;
+				$steps    = array();
+				$now      = \Hypercart_Time::now();
+
+				$data['failure_count'] = max( $data['failure_count'], self::FAILURE_THRESHOLD );
+				$this->trip_locked( $data, 'Self test trip', 'self_test' );
+				$steps[] = array(
+					'step'   => __( 'Trip breaker', 'hypercart-server-monitor' ),
+					'status' => 'ok',
+				);
+
+				$data = $this->get_state_data();
+				$data['cooldown_until'] = $now - 1;
+				$this->update_state_data_locked( $data );
+				$data = $this->get_state_data();
+				$this->update_state_locked( $data, 'half_open', array( 'cooldown_until' => null ) );
+				$steps[] = array(
+					'step'   => __( 'Enter half-open (probe allowed)', 'hypercart-server-monitor' ),
+					'status' => 'ok',
+				);
+
+				$data = $this->get_state_data();
+				$data['failure_count'] = max( $data['failure_count'] + 1, self::FAILURE_THRESHOLD );
+				$this->trip_locked( $data, 'Self test probe failure', 'probe_failure' );
+				$steps[] = array(
+					'step'   => __( 'Probe failure re-trips', 'hypercart-server-monitor' ),
+					'status' => 'ok',
+				);
+
+				$data = $this->get_state_data();
+				$data['cooldown_until'] = $now - 1;
+				$this->update_state_data_locked( $data );
+				$data = $this->get_state_data();
+				$this->update_state_locked( $data, 'half_open', array( 'cooldown_until' => null ) );
+				$steps[] = array(
+					'step'   => __( 'Cooldown expiry allows probe', 'hypercart-server-monitor' ),
+					'status' => 'ok',
+				);
+
+				$data = $this->get_state_data();
+				$this->update_state_locked(
+					$data,
+					'idle',
+					array(
+						'failure_count'  => 0,
+						'last_error'     => null,
+						'cooldown_until' => null,
+					)
+				);
+				$steps[] = array(
+					'step'   => __( 'Probe success closes breaker', 'hypercart-server-monitor' ),
+					'status' => 'ok',
+				);
+
+				update_option( self::OPTION_NAME, $original, false );
+
+				\Hypercart_Logger::info(
+					'hypercart-server-monitor',
+					'Breaker self test completed; state restored',
+					array(
+						'state' => $original['state'] ?? 'unknown',
+					)
+				);
+
+				return array(
+					'success' => true,
+					'steps'   => $steps,
+					'message' => __( 'Breaker self test completed and state restored.', 'hypercart-server-monitor' ),
+				);
 			}
 		);
 	}

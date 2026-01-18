@@ -150,6 +150,43 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<?php endif; ?>
 	</div>
 
+	<!-- Self Tests -->
+	<div class="hsm-card">
+		<h2><?php esc_html_e( 'Self Tests', 'hypercart-server-monitor' ); ?></h2>
+		<table class="widefat">
+			<tbody>
+				<?php foreach ( $self_tests as $test ) : ?>
+					<tr>
+						<th><?php echo esc_html( $test['label'] ); ?></th>
+						<td>
+							<?php if ( 'ok' === $test['status'] ) : ?>
+								<span class="hsm-status-ok"><?php echo esc_html( $test['detail'] ); ?></span>
+							<?php else : ?>
+								<span class="hsm-status-error"><?php echo esc_html( $test['detail'] ); ?></span>
+							<?php endif; ?>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+	</div>
+
+	<!-- Circuit Breaker Self Test -->
+	<div class="hsm-card">
+		<h2><?php esc_html_e( 'Circuit Breaker Self Test', 'hypercart-server-monitor' ); ?></h2>
+		<p class="description">
+			<?php esc_html_e( 'Runs a safe simulation of trip/cooldown/probe and restores the original state.', 'hypercart-server-monitor' ); ?>
+		</p>
+		<button type="button" id="hsm-run-breaker-test" class="button button-secondary">
+			<?php esc_html_e( 'Run Breaker Self Test', 'hypercart-server-monitor' ); ?>
+		</button>
+		<span id="hsm-breaker-test-spinner" class="spinner" style="float: none; vertical-align: middle; display: none;"></span>
+		<div id="hsm-breaker-test-results" class="hsm-test-results" style="display: none;"></div>
+		<div id="hsm-breaker-test-error" class="notice notice-error inline" style="display: none;">
+			<p><strong><?php esc_html_e( 'Error:', 'hypercart-server-monitor' ); ?></strong> <span class="hsm-breaker-error-message"></span></p>
+		</div>
+	</div>
+
 	<!-- Lock Status -->
 	<div class="hsm-card">
 		<h2><?php esc_html_e( 'Lock Status', 'hypercart-server-monitor' ); ?></h2>
