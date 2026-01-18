@@ -136,9 +136,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<th><?php esc_html_e( 'Timestamp', 'hypercart-server-monitor' ); ?></th>
 						<th><?php esc_html_e( 'Score', 'hypercart-server-monitor' ); ?></th>
 						<th><?php esc_html_e( 'Label', 'hypercart-server-monitor' ); ?></th>
-						<th><?php esc_html_e( 'CPU', 'hypercart-server-monitor' ); ?></th>
-						<th><?php esc_html_e( 'Memory', 'hypercart-server-monitor' ); ?></th>
-						<th><?php esc_html_e( 'Disk', 'hypercart-server-monitor' ); ?></th>
+						<th><?php esc_html_e( 'Benchmark 1 (ms)', 'hypercart-server-monitor' ); ?></th>
+						<th><?php esc_html_e( 'Benchmark 2 (ms)', 'hypercart-server-monitor' ); ?></th>
+						<th><?php esc_html_e( 'Benchmark 3 (ms)', 'hypercart-server-monitor' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -149,14 +149,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 						$ts    = isset( $sample['ts_utc'] ) ? strtotime( $sample['ts_utc'] ) : null;
 						$score = $sample['score'] ?? array();
 						$raw   = $sample['raw'] ?? array();
+						$times = $raw['benchmark']['all_times_ms'] ?? array();
+						$time_1 = isset( $times[0] ) ? number_format( $times[0], 2 ) : 'N/A';
+						$time_2 = isset( $times[1] ) ? number_format( $times[1], 2 ) : 'N/A';
+						$time_3 = isset( $times[2] ) ? number_format( $times[2], 2 ) : 'N/A';
 						?>
 						<tr>
 							<td><?php echo esc_html( $ts ? \Hypercart_Time::format( 'Y-m-d H:i:s', $ts ) : 'N/A' ); ?></td>
 							<td><?php echo esc_html( number_format( $score['combined'] ?? 0, 1 ) ); ?></td>
 							<td><?php echo esc_html( $score['label'] ?? 'Unknown' ); ?></td>
-							<td><?php echo esc_html( number_format( $raw['cpu']['load_1min'] ?? 0, 2 ) ); ?></td>
-							<td><?php echo esc_html( number_format( $raw['memory']['used_percent'] ?? 0, 1 ) ); ?>%</td>
-							<td><?php echo esc_html( number_format( $raw['disk']['free_percent'] ?? 0, 1 ) ); ?>%</td>
+							<td><?php echo esc_html( $time_1 ); ?></td>
+							<td><?php echo esc_html( $time_2 ); ?></td>
+							<td><?php echo esc_html( $time_3 ); ?></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>
@@ -164,4 +168,3 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 	<?php endif; ?>
 </div>
-

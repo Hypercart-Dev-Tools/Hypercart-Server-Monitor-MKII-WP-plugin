@@ -109,26 +109,67 @@ class Plugin {
 	 * Run monitoring task (called by cron).
 	 */
 	public function run_monitoring() {
+		$this->run_monitoring_internal(
+			array(
+				'send_email'             => true,
+				'respect_circuit_breaker'=> true,
+				'track_failures'         => true,
+				'allow_probe'            => true,
+				'use_scheduled_state'    => true,
+				'source'                 => 'scheduled',
+				'context_label'          => 'Monitoring task',
+			)
+		);
+	}
+
+	/**
+	 * Run manual monitoring test (called by admin UI).
+	 *
+	 * @return array Result payload for UI.
+	 */
+	public function run_manual_test() {
+		return $this->run_monitoring_internal(
+			array(
+				'send_email'             => false,
+				'respect_circuit_breaker'=> true,
+				'track_failures'         => true,
+				'allow_probe'            => true,
+				'use_scheduled_state'    => false,
+				'source'                 => 'manual',
+				'context_label'          => 'Manual test',
+			)
+		);
+	}
+
+	/**
+	 * Internal monitoring execution path.
+	 *
+	 * @param array $options Run options.
+	 * @return array Result payload for UI or diagnostics.
+	 */
+	private function run_monitoring_internal( $options ) {
+		$options = wp_parse_args(
+			$options,
+			array(
+				'send_email'              => true,
+				'respect_circuit_breaker' => true,
+				'track_failures'          => true,
+				'allow_probe'             => true,
+				'use_scheduled_state'     => true,
+				'source'                  => 'scheduled',
+				'context_label'           => 'Monitoring task',
+			)
+		);
+
 		$start_time = \Hypercart_Time::now();
 
 		\Hypercart_Logger::info(
 			'hypercart-server-monitor',
-			'Monitoring task triggered',
+			$options['context_label'] . ' triggered',
 			array(
 				'time' => \Hypercart_Time::iso8601( $start_time ),
 			)
 		);
-
-		// Check if circuit breaker is tripped.
-		$state_data = $this->state_store->get_state_data();
-		if ( 'tripped' === $state_data['state'] ) {
-			\Hypercart_Logger::warning(
-				'hypercart-server-monitor',
-				'Circuit breaker tripped, skipping run',
-				array( 'failure_count' => $state_data['failure_count'] )
-			);
-			return;
-		}
 
 		// Try to acquire lock.
 		if ( ! Helpers\LockHelper::acquire() ) {
@@ -137,12 +178,30 @@ class Plugin {
 				'Failed to acquire lock, skipping run',
 				array()
 			);
-			return;
+			return array(
+				'success' => false,
+				'message' => __( 'Another run is already in progress.', 'hypercart-server-monitor' ),
+			);
 		}
 
 		try {
-			// Transition to scheduled state.
-			$this->state_store->transition_to( 'scheduled' );
+			$probe_run = false;
+			if ( $options['respect_circuit_breaker'] ) {
+				$breaker_status = $this->state_store->begin_run( $options['allow_probe'] );
+				if ( ! is_array( $breaker_status ) || empty( $breaker_status['allowed'] ) ) {
+					return array(
+						'success' => false,
+						'message' => $breaker_status['message'] ?? __( 'Run blocked by circuit breaker.', 'hypercart-server-monitor' ),
+					);
+				}
+
+				$probe_run = ! empty( $breaker_status['probe'] );
+			}
+
+			// Transition to scheduled state (cron only).
+			if ( $options['use_scheduled_state'] ) {
+				$this->state_store->transition_to( 'scheduled' );
+			}
 
 			// Transition to running state.
 			$this->state_store->transition_to( 'running' );
@@ -166,6 +225,7 @@ class Plugin {
 				'meta'   => array(
 					'collector'   => 'hypercart-server-monitor',
 					'duration_ms' => ( \Hypercart_Time::now() - $start_time ) * 1000,
+					'source'      => $options['source'],
 				),
 			);
 
@@ -173,19 +233,21 @@ class Plugin {
 				throw new \Exception( 'Failed to write JSON' );
 			}
 
-			// Transition to emailing state.
-			$this->state_store->transition_to( 'emailing' );
+			if ( $options['send_email'] ) {
+				// Transition to emailing state.
+				$this->state_store->transition_to( 'emailing' );
 
-			// Send email notification.
-			$email_service = new Services\EmailService();
-			$email_sent    = $email_service->send_notification( $sample );
+				// Send email notification.
+				$email_service = new Services\EmailService();
+				$email_sent    = $email_service->send_notification( $sample );
 
-			if ( ! $email_sent ) {
-				\Hypercart_Logger::warning(
-					'hypercart-server-monitor',
-					'Email notification failed, but continuing',
-					array()
-				);
+				if ( ! $email_sent ) {
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Email notification failed, but continuing',
+						array()
+					);
+				}
 			}
 
 			// Transition to completed state.
@@ -199,11 +261,15 @@ class Plugin {
 			);
 
 			// Reset failure counter on success.
-			$this->state_store->reset_failures();
+			if ( $probe_run ) {
+				$this->state_store->record_probe_success();
+			} elseif ( $options['track_failures'] ) {
+				$this->state_store->reset_failures();
+			}
 
 			\Hypercart_Logger::info(
 				'hypercart-server-monitor',
-				'Monitoring task completed successfully',
+				$options['context_label'] . ' completed successfully',
 				array(
 					'score'          => $score['combined'],
 					'score_label'    => $score['label'],
@@ -212,18 +278,39 @@ class Plugin {
 				)
 			);
 
+			return array(
+				'success'     => true,
+				'score'       => $score,
+				'raw_metrics' => $raw_metrics,
+				'duration_ms' => $duration_ms,
+				'timestamp'   => \Hypercart_Time::format( 'Y-m-d H:i:s', $start_time ),
+				'sample'      => $sample,
+			);
 		} catch ( \Exception $e ) {
 			// Record error.
-			$this->state_store->record_error( $e->getMessage() );
-			$this->state_store->transition_to( 'error' );
+			if ( $probe_run ) {
+				$this->state_store->record_probe_failure( $e->getMessage() );
+			} elseif ( $options['track_failures'] ) {
+				$error_result = $this->state_store->record_error( $e->getMessage() );
+				if ( ! is_array( $error_result ) || empty( $error_result['tripped'] ) ) {
+					$this->state_store->transition_to( 'error' );
+				}
+			} else {
+				$this->state_store->transition_to( 'error' );
+			}
 
 			\Hypercart_Logger::error(
 				'hypercart-server-monitor',
-				'Monitoring task failed',
+				$options['context_label'] . ' failed',
 				array(
 					'error' => $e->getMessage(),
 					'trace' => $e->getTraceAsString(),
 				)
+			);
+
+			return array(
+				'success' => false,
+				'message' => $e->getMessage(),
 			);
 		} finally {
 			// Always release lock.

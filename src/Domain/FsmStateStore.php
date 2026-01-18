@@ -27,6 +27,16 @@ class FsmStateStore {
 	const LOCK_TTL = 30;
 
 	/**
+	 * Failure threshold before tripping the breaker.
+	 */
+	const FAILURE_THRESHOLD = 5;
+
+	/**
+	 * Cooldown window after a trip (seconds).
+	 */
+	const COOLDOWN_SECONDS = 900;
+
+	/**
 	 * Valid states.
 	 *
 	 * @var array
@@ -39,6 +49,7 @@ class FsmStateStore {
 		'emailing',
 		'completed',
 		'error',
+		'half_open',
 		'tripped',
 	);
 
@@ -80,6 +91,7 @@ class FsmStateStore {
 			'updated_utc'      => \Hypercart_Time::now(),
 			'failure_count'    => 0,
 			'last_error'       => null,
+			'cooldown_until'   => null,
 			'last_run_utc'     => null,
 			'last_duration_ms' => null,
 			'lock_status'      => 'unlocked',
@@ -107,24 +119,223 @@ class FsmStateStore {
 	public function transition_to( $new_state, $metadata = array() ) {
 		return $this->with_state_lock(
 			function () use ( $new_state, $metadata ) {
-		// Validate state.
+				$current_data = $this->get_state_data();
+				return $this->update_state_locked( $current_data, $new_state, $metadata );
+			}
+		);
+	}
+
+	/**
+	 * Determine whether a run is allowed based on breaker state.
+	 *
+	 * @param bool $allow_probe Whether to allow a probe run after cooldown.
+	 * @return array Result with allowed/probe/message keys.
+	 */
+	public function begin_run( $allow_probe = true ) {
+		return $this->with_state_lock(
+			function () use ( $allow_probe ) {
+				$data  = $this->get_state_data();
+				$state = $data['state'] ?? 'idle';
+				$now   = \Hypercart_Time::now();
+
+				if ( 'tripped' === $state ) {
+					$cooldown_until = $data['cooldown_until'] ?? null;
+					if ( $cooldown_until && $now < (int) $cooldown_until ) {
+						\Hypercart_Logger::warning(
+							'hypercart-server-monitor',
+							'Circuit breaker cooldown active, run blocked',
+							array(
+								'cooldown_until' => $cooldown_until,
+								'remaining_sec'  => (int) $cooldown_until - $now,
+							)
+						);
+						return array(
+							'allowed' => false,
+							'probe'   => false,
+							'message' => __( 'Circuit breaker cooldown active. Run skipped.', 'hypercart-server-monitor' ),
+						);
+					}
+
+					if ( ! $allow_probe ) {
+						\Hypercart_Logger::warning(
+							'hypercart-server-monitor',
+							'Circuit breaker requires probe run, blocking normal run',
+							array()
+						);
+						return array(
+							'allowed' => false,
+							'probe'   => false,
+							'message' => __( 'Circuit breaker requires a probe run. Run skipped.', 'hypercart-server-monitor' ),
+						);
+					}
+
+					$this->update_state_locked(
+						$data,
+						'half_open',
+						array( 'cooldown_until' => null )
+					);
+
+					return array(
+						'allowed' => true,
+						'probe'   => true,
+						'message' => null,
+					);
+				}
+
+				if ( 'half_open' === $state ) {
+					if ( ! $allow_probe ) {
+						\Hypercart_Logger::warning(
+							'hypercart-server-monitor',
+							'Probe-only state active, blocking normal run',
+							array()
+						);
+						return array(
+							'allowed' => false,
+							'probe'   => false,
+							'message' => __( 'Circuit breaker is in probe mode. Run skipped.', 'hypercart-server-monitor' ),
+						);
+					}
+
+					return array(
+						'allowed' => true,
+						'probe'   => true,
+						'message' => null,
+					);
+				}
+
+				return array(
+					'allowed' => true,
+					'probe'   => false,
+					'message' => null,
+				);
+			}
+		);
+	}
+
+	/**
+	 * Record an error.
+	 *
+	 * @param string $error_message Error message.
+	 * @return array Result with tripped flag.
+	 */
+	public function record_error( $error_message ) {
+		return $this->with_state_lock(
+			function () use ( $error_message ) {
+				$data = $this->get_state_data();
+
+				$data['failure_count']++;
+				$data['last_error'] = array(
+					'message'   => $error_message,
+					'timestamp' => \Hypercart_Time::now(),
+				);
+
+				if ( $data['failure_count'] >= self::FAILURE_THRESHOLD ) {
+					$this->trip_locked( $data, $error_message, 'failure_threshold' );
+					return array( 'tripped' => true );
+				}
+
+				$this->update_state_data_locked( $data );
+
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Run failure recorded',
+					array(
+						'failure_count' => $data['failure_count'],
+						'error'         => $error_message,
+					)
+				);
+
+				return array( 'tripped' => false );
+			}
+		);
+	}
+
+	/**
+	 * Record a probe failure and trip immediately.
+	 *
+	 * @param string $error_message Error message.
+	 * @return array Result with tripped flag.
+	 */
+	public function record_probe_failure( $error_message ) {
+		return $this->with_state_lock(
+			function () use ( $error_message ) {
+				$data = $this->get_state_data();
+
+				$data['failure_count']++;
+				$this->trip_locked( $data, $error_message, 'probe_failure' );
+
+				return array( 'tripped' => true );
+			}
+		);
+	}
+
+	/**
+	 * Record a probe success and close the breaker.
+	 *
+	 * @return bool True on success, false on failure.
+	 */
+	public function record_probe_success() {
+		return $this->with_state_lock(
+			function () {
+				$data                  = $this->get_state_data();
+				$data['failure_count'] = 0;
+				$data['last_error']    = null;
+				$data['cooldown_until']= null;
+
+				$this->update_state_data_locked( $data );
+
+				\Hypercart_Logger::info(
+					'hypercart-server-monitor',
+					'Circuit breaker closed after probe success',
+					array()
+				);
+
+				return true;
+			}
+		);
+	}
+
+	/**
+	 * Reset failure counter (on successful run).
+	 */
+	public function reset_failures() {
+		return $this->with_state_lock(
+			function () {
+				$data                   = $this->get_state_data();
+				$data['failure_count']  = 0;
+				$data['last_error']     = null;
+				$data['cooldown_until'] = null;
+
+				$this->update_state_data_locked( $data );
+
+				return true;
+			}
+		);
+	}
+
+	/**
+	 * Update state while holding the state lock.
+	 *
+	 * @param array  $current_data Current state data.
+	 * @param string $new_state    New state.
+	 * @param array  $metadata     Metadata to merge.
+	 * @return bool True on success, false on failure.
+	 */
+	private function update_state_locked( $current_data, $new_state, $metadata = array() ) {
 		if ( ! in_array( $new_state, $this->valid_states, true ) ) {
 			\Hypercart_Logger::error(
 				'hypercart-server-monitor',
 				'Invalid state transition attempted',
 				array(
-					'new_state' => $new_state,
+					'new_state'    => $new_state,
 					'valid_states' => $this->valid_states,
 				)
 			);
 			return false;
 		}
 
-		$current_data = $this->get_state_data();
-		$old_state    = $current_data['state'];
-
-		// Update state.
-		$new_data = array_merge(
+		$old_state = $current_data['state'] ?? 'unknown';
+		$new_data  = array_merge(
 			$current_data,
 			$metadata,
 			array(
@@ -145,61 +356,51 @@ class FsmStateStore {
 		);
 
 		return true;
-			}
-		);
 	}
 
 	/**
-	 * Record an error.
+	 * Update state data without changing the state.
 	 *
-	 * @param string $error_message Error message.
+	 * @param array $data Current state data.
+	 * @return bool True on success, false on failure.
 	 */
-	public function record_error( $error_message ) {
-		return $this->with_state_lock(
-			function () use ( $error_message ) {
-				$data = $this->get_state_data();
-
-				$data['failure_count']++;
-				$data['last_error'] = array(
-					'message'   => $error_message,
-					'timestamp' => \Hypercart_Time::now(),
-				);
-
-				// Trip circuit breaker after 5 consecutive failures.
-				if ( $data['failure_count'] >= 5 ) {
-					$data['state'] = 'tripped';
-					\Hypercart_Logger::warning(
-						'hypercart-server-monitor',
-						'Circuit breaker tripped',
-						array(
-							'failure_count' => $data['failure_count'],
-							'last_error'    => $error_message,
-						)
-					);
-				}
-
-				update_option( self::OPTION_NAME, $data, false );
-
-				return true;
-			}
-		);
+	private function update_state_data_locked( $data ) {
+		$data['updated_utc'] = \Hypercart_Time::now();
+		update_option( self::OPTION_NAME, $data, false );
+		return true;
 	}
 
 	/**
-	 * Reset failure counter (on successful run).
+	 * Trip the breaker and set cooldown.
+	 *
+	 * @param array  $data          Current state data.
+	 * @param string $error_message Error message.
+	 * @param string $reason        Trip reason.
+	 * @return bool True on success, false on failure.
 	 */
-	public function reset_failures() {
-		return $this->with_state_lock(
-			function () {
-				$data                   = $this->get_state_data();
-				$data['failure_count']  = 0;
-				$data['last_error']     = null;
+	private function trip_locked( $data, $error_message, $reason ) {
+		$cooldown_until = \Hypercart_Time::now() + self::COOLDOWN_SECONDS;
 
-				update_option( self::OPTION_NAME, $data, false );
-
-				return true;
-			}
+		$metadata = array(
+			'failure_count' => $data['failure_count'],
+			'last_error'    => array(
+				'message'   => $error_message,
+				'timestamp' => \Hypercart_Time::now(),
+			),
+			'cooldown_until' => $cooldown_until,
 		);
+
+		\Hypercart_Logger::warning(
+			'hypercart-server-monitor',
+			'Circuit breaker tripped',
+			array(
+				'failure_count'  => $data['failure_count'],
+				'reason'         => $reason,
+				'cooldown_until' => $cooldown_until,
+			)
+		);
+
+		return $this->update_state_locked( $data, 'tripped', $metadata );
 	}
 
 	/**

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.1] - 2026-01-11
 
+## [0.4.2] - 2026-01-17
+
+### Security
+- Added capability checks before rendering admin notices. `wp-server-performance-monitor.php`
+- Added capability check before enqueuing admin assets. `src/Admin/AdminController.php`
+
+## [0.4.3] - 2026-01-18
+
+### Reliability
+- Centralized breaker gating in the FSM store, including cooldown handling and half-open probe runs. `src/Domain/FsmStateStore.php`, `src/Plugin.php`
+- Manual tests now follow the same breaker rules as scheduled runs. `src/Plugin.php`, `src/Admin/AdminController.php`
+
 ### Security Fixes - Audit Response
 
 **Critical security and hardening improvements based on code audit.**
@@ -451,4 +463,3 @@ wp-server-performance-monitor/
 **Version:** 0.4.0
 **Date:** 2026-01-10
 **Status:** Phase 5 complete - Email notifications with dynamic subject line and manual test button
-

@@ -78,6 +78,10 @@ class AdminController {
 	 * @param string $hook Current admin page hook.
 	 */
 	public function enqueue_assets( $hook ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		// Only enqueue on our admin page.
 		if ( 'toplevel_page_' . self::PAGE_SLUG !== $hook ) {
 			return;
@@ -306,55 +310,16 @@ class AdminController {
 			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'hypercart-server-monitor' ) ) );
 		}
 
-		// Run monitoring without logging to JSON.
+		// Run manual monitoring through the shared FSM path.
 		try {
-			$start_time = \Hypercart_Time::now();
-
-			// Log manual test start.
-			\Hypercart_Logger::info(
-				'hypercart-server-monitor',
-				'Manual test started from admin UI',
-				array( 'user' => wp_get_current_user()->user_login )
-			);
-
-			// Collect metrics.
-			$raw_metrics = $this->collect_metrics();
-
-			// Log collected metrics for debugging.
-			\Hypercart_Logger::debug(
-				'hypercart-server-monitor',
-				'Manual test metrics collected',
-				array( 'raw_metrics' => $raw_metrics )
-			);
-
-			// Calculate score (detailed format).
-			$scorer = new \Hypercart_Server_Monitor\Services\ScoringService();
-			$score  = $scorer->calculate_score( $raw_metrics, true );
-
-			// Validate score.
-			if ( ! is_array( $score ) || ! isset( $score['combined'] ) ) {
-				\Hypercart_Logger::error(
-					'hypercart-server-monitor',
-					'Scoring service returned invalid data',
-					array(
-						'score_type'  => gettype( $score ),
-						'score_value' => $score,
-					)
-				);
-				throw new \Exception( 'Scoring service returned invalid data. Check logs for details.' );
+			$result = \Hypercart_Server_Monitor\Plugin::get_instance()->run_manual_test();
+			if ( empty( $result['success'] ) ) {
+				throw new \Exception( $result['message'] ?? 'Manual test failed. Check logs for details.' );
 			}
 
-			$duration_ms = ( \Hypercart_Time::now() - $start_time ) * 1000;
-
-			// Log manual test completion.
-			\Hypercart_Logger::info(
-				'hypercart-server-monitor',
-				'Manual test completed',
-				array(
-					'score'       => $score['combined'],
-					'duration_ms' => $duration_ms,
-				)
-			);
+			$raw_metrics = $result['raw_metrics'] ?? array();
+			$score       = $result['score'] ?? array();
+			$duration_ms = $result['duration_ms'] ?? 0;
 
 			// Check if benchmark is supported.
 			$warnings = array();
@@ -367,7 +332,7 @@ class AdminController {
 					'score'       => $score,
 					'raw_metrics' => $raw_metrics,
 					'duration_ms' => $duration_ms,
-					'timestamp'   => \Hypercart_Time::format( 'Y-m-d H:i:s' ),
+					'timestamp'   => $result['timestamp'] ?? \Hypercart_Time::format( 'Y-m-d H:i:s' ),
 					'warnings'    => $warnings,
 					'logged'      => true,
 				)
@@ -383,7 +348,7 @@ class AdminController {
 			wp_send_json_error(
 				array(
 					'message' => $e->getMessage(),
-					'logged'  => true,
+					'logged'  => false,
 				)
 			);
 		}
@@ -422,8 +387,7 @@ class AdminController {
 			if ( empty( $samples ) ) {
 				throw new \Exception(
 					'No benchmark data available. The JSON file is empty. ' .
-					'Manual tests do NOT save to JSON (by design). ' .
-					'Please wait for the next scheduled cron run (every 15 minutes), ' .
+					'Run a manual test or wait for the next scheduled cron run (every 15 minutes), ' .
 					'or check the Debug tab to see if cron is running properly.'
 				);
 			}
@@ -532,13 +496,4 @@ class AdminController {
 		}
 	}
 
-	/**
-	 * Collect benchmark metrics.
-	 *
-	 * @return array Benchmark metrics.
-	 */
-	private function collect_metrics() {
-		$metrics_service = new \Hypercart_Server_Monitor\Services\MetricsService();
-		return $metrics_service->collect();
-	}
 }

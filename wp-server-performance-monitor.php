@@ -32,6 +32,9 @@ define( 'HYPERCART_SERVER_MONITOR_PLUGIN_BASENAME', plugin_basename( __FILE__ ) 
  * Display admin notice for missing Hypercart Helper.
  */
 function hypercart_server_monitor_missing_dependency_notice() {
+if ( ! current_user_can( 'manage_options' ) ) {
+return;
+}
 ?>
 <div class="notice notice-error">
 <p>
@@ -49,6 +52,9 @@ Manage Plugins
  * Display admin notice for version mismatch.
  */
 function hypercart_server_monitor_version_mismatch_notice() {
+if ( ! current_user_can( 'manage_options' ) ) {
+return;
+}
 $current_version = defined( 'HYPERCART_HELPER_VERSION' ) ? HYPERCART_HELPER_VERSION : 'unknown';
 ?>
 <div class="notice notice-error">

@@ -13,12 +13,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="hsm-manual-test">
 	<div class="hsm-card">
 		<h2><?php esc_html_e( 'Manual Test Runner', 'hypercart-server-monitor' ); ?></h2>
-		<p><?php esc_html_e( 'Run a synthetic PHP performance benchmark without saving to the database. This is useful for testing and debugging.', 'hypercart-server-monitor' ); ?></p>
+		<p><?php esc_html_e( 'Run a synthetic PHP performance benchmark and save it to Recent Samples. This is useful for testing and debugging.', 'hypercart-server-monitor' ); ?></p>
 
 		<button type="button" id="hsm-run-test" class="button button-primary button-large">
 			<span class="dashicons dashicons-controls-play"></span>
 			<?php esc_html_e( 'Run Test Now', 'hypercart-server-monitor' ); ?>
 		</button>
+		<p class="description">
+			<?php esc_html_e( 'Manual tests share the same lock as scheduled runs; if another run is in progress, the test will be skipped.', 'hypercart-server-monitor' ); ?>
+		</p>
 
 		<div id="hsm-test-spinner" class="hsm-spinner" style="display: none;">
 			<span class="spinner is-active"></span>
@@ -38,9 +41,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<h3><?php esc_html_e( 'About Manual Testing', 'hypercart-server-monitor' ); ?></h3>
 		<p><?php esc_html_e( 'The benchmark runs 3 iterations of compute-intensive PHP tasks (math operations, string manipulation, array processing) and averages the execution time.', 'hypercart-server-monitor' ); ?></p>
 		<ul>
-			<li><?php esc_html_e( 'Manual tests do NOT save results to the database', 'hypercart-server-monitor' ); ?></li>
+			<li><?php esc_html_e( 'Manual tests DO save results to the JSON file and appear in Recent Samples', 'hypercart-server-monitor' ); ?></li>
 			<li><?php esc_html_e( 'Manual tests do NOT trigger email notifications', 'hypercart-server-monitor' ); ?></li>
-			<li><?php esc_html_e( 'Manual tests do NOT affect the FSM state', 'hypercart-server-monitor' ); ?></li>
+			<li><?php esc_html_e( 'Manual tests run through the FSM state transitions', 'hypercart-server-monitor' ); ?></li>
 			<li><?php esc_html_e( 'Lower execution time = better performance = higher score', 'hypercart-server-monitor' ); ?></li>
 		</ul>
 	</div>
@@ -216,4 +219,3 @@ jQuery(document).ready(function($) {
 	});
 });
 </script>
-
