@@ -7,8 +7,6 @@
 
 namespace Hypercart_Server_Monitor\Services;
 
-use Hypercart_Server_Monitor\Domain\FsmStateStore;
-
 /**
  * Manages WP-Cron scheduling for monitoring tasks.
  */
@@ -22,22 +20,6 @@ class SchedulerService {
 	 * Schedule interval name.
 	 */
 	const SCHEDULE_INTERVAL = 'every_15_minutes';
-
-	/**
-	 * FSM state store.
-	 *
-	 * @var FsmStateStore
-	 */
-	private $state_store;
-
-	/**
-	 * Constructor.
-	 *
-	 * @param FsmStateStore $state_store State store instance.
-	 */
-	public function __construct( FsmStateStore $state_store ) {
-		$this->state_store = $state_store;
-	}
 
 	/**
 	 * Add custom cron schedule (15 minutes).

@@ -54,6 +54,7 @@ class AdminController {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_hsm_run_manual_test', array( $this, 'ajax_run_manual_test' ) );
 		add_action( 'wp_ajax_hsm_send_test_email', array( $this, 'ajax_send_test_email' ) );
+		add_action( 'wp_ajax_hsm_run_breaker_self_test', array( $this, 'ajax_run_breaker_self_test' ) );
 		add_action( 'wp_ajax_hsm_schedule_cron', array( $this, 'ajax_schedule_cron' ) );
 	}
 
@@ -61,9 +62,15 @@ class AdminController {
 	 * Register admin menu.
 	 */
 	public function register_menu() {
+		$page_title = sprintf(
+			/* translators: %s: plugin version */
+			__( 'Hypercart - Server Monitor MKII v%s', 'hypercart-server-monitor' ),
+			HYPERCART_SERVER_MONITOR_VERSION
+		);
+		$menu_title = __( 'Hypercart - Server Monitor MKII', 'hypercart-server-monitor' );
 		add_menu_page(
-			__( 'Server Monitor', 'hypercart-server-monitor' ),
-			__( 'Server Monitor', 'hypercart-server-monitor' ),
+			$page_title,
+			$menu_title,
 			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' ),
@@ -78,6 +85,10 @@ class AdminController {
 	 * @param string $hook Current admin page hook.
 	 */
 	public function enqueue_assets( $hook ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		// Only enqueue on our admin page.
 		if ( 'toplevel_page_' . self::PAGE_SLUG !== $hook ) {
 			return;
@@ -119,6 +130,7 @@ class AdminController {
 				'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
 				'nonce'      => wp_create_nonce( 'hsm_manual_test' ),
 				'emailNonce' => wp_create_nonce( 'hsm_send_test_email' ),
+				'debugNonce' => wp_create_nonce( 'hsm_debug' ),
 			)
 		);
 	}
@@ -133,7 +145,11 @@ class AdminController {
 		}
 
 		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'Server Monitor', 'hypercart-server-monitor' ) . '</h1>';
+		echo '<h1>' . esc_html( sprintf(
+			/* translators: %s: plugin version */
+			__( 'Hypercart - Server Monitor MKII v%s', 'hypercart-server-monitor' ),
+			HYPERCART_SERVER_MONITOR_VERSION
+		) ) . '</h1>';
 
 		\Hypercart_Admin_Tabs::render(
 			self::PAGE_SLUG,
@@ -188,7 +204,15 @@ class AdminController {
 	private function render_missing_helper_notice() {
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Server Monitor', 'hypercart-server-monitor' ); ?></h1>
+			<h1>
+				<?php
+				echo esc_html( sprintf(
+					/* translators: %s: plugin version */
+					__( 'Hypercart - Server Monitor MKII v%s', 'hypercart-server-monitor' ),
+					HYPERCART_SERVER_MONITOR_VERSION
+				) );
+				?>
+			</h1>
 			<div class="notice notice-error">
 				<p>
 					<strong><?php esc_html_e( 'Hypercart Helper Required', 'hypercart-server-monitor' ); ?></strong>
@@ -211,7 +235,7 @@ class AdminController {
 	 * Render Dashboard tab.
 	 */
 	public function render_tab_dashboard() {
-		$data           = $this->repository->read();
+		$data           = $this->repository->read( false );
 		$samples        = $data['samples'] ?? array();
 		$latest_sample  = ! empty( $samples ) ? end( $samples ) : null;
 		$state_data     = $this->state_store->get_state_data();
@@ -273,6 +297,52 @@ class AdminController {
 		$file_status    = $this->repository->get_file_status();
 		$lock_status    = LockHelper::get_status();
 		$cron_status    = $this->get_cron_status();
+		$data_dir       = dirname( $file_status['path'] );
+		$self_tests     = array(
+			array(
+				'label'  => __( 'Log Handling and File Visibility', 'hypercart-server-monitor' ),
+				'status' => ( file_exists( $data_dir . '/.htaccess' ) && file_exists( $data_dir . '/index.html' ) ) ? 'ok' : 'fail',
+				'detail' => ( file_exists( $data_dir . '/.htaccess' ) && file_exists( $data_dir . '/index.html' ) )
+					? __( 'Security files (.htaccess and index.html) are present.', 'hypercart-server-monitor' )
+					: sprintf(
+						/* translators: %s: link to security readme */
+						__( 'Note: Please review the SECURITY-README viewer for guidance. See %s.', 'hypercart-server-monitor' ),
+						'<a href="' . esc_url( admin_url( 'admin.php?page=hypercart-security-guide' ) ) . '">SECURITY-README viewer</a>'
+					),
+			),
+			array(
+				'label'  => __( 'Manual test AJAX action registered', 'hypercart-server-monitor' ),
+				'status' => has_action( 'wp_ajax_hsm_run_manual_test' ) ? 'ok' : 'fail',
+				'detail' => has_action( 'wp_ajax_hsm_run_manual_test' ) ? __( 'Registered', 'hypercart-server-monitor' ) : __( 'Missing', 'hypercart-server-monitor' ),
+			),
+			array(
+				'label'  => __( 'Breaker probe methods available', 'hypercart-server-monitor' ),
+				'status' => method_exists( $this->state_store, 'record_probe_success' ) && method_exists( $this->state_store, 'record_probe_failure' ) ? 'ok' : 'fail',
+				'detail' => method_exists( $this->state_store, 'record_probe_success' ) && method_exists( $this->state_store, 'record_probe_failure' )
+					? __( 'Available', 'hypercart-server-monitor' )
+					: __( 'Missing', 'hypercart-server-monitor' ),
+			),
+			array(
+				'label'  => __( 'Breaker cooldown field present', 'hypercart-server-monitor' ),
+				'status' => array_key_exists( 'cooldown_until', $state_data ) ? 'ok' : 'fail',
+				'detail' => array_key_exists( 'cooldown_until', $state_data ) ? __( 'Present', 'hypercart-server-monitor' ) : __( 'Missing', 'hypercart-server-monitor' ),
+			),
+			array(
+				'label'  => __( 'Breaker half-open state available', 'hypercart-server-monitor' ),
+				'status' => method_exists( $this->state_store, 'begin_run' ) ? 'ok' : 'fail',
+				'detail' => method_exists( $this->state_store, 'begin_run' ) ? __( 'Available', 'hypercart-server-monitor' ) : __( 'Missing', 'hypercart-server-monitor' ),
+			),
+			array(
+				'label'  => __( 'Manual test runner available', 'hypercart-server-monitor' ),
+				'status' => method_exists( '\Hypercart_Server_Monitor\Plugin', 'run_manual_test' ) ? 'ok' : 'fail',
+				'detail' => method_exists( '\Hypercart_Server_Monitor\Plugin', 'run_manual_test' ) ? __( 'Available', 'hypercart-server-monitor' ) : __( 'Missing', 'hypercart-server-monitor' ),
+			),
+			array(
+				'label'  => __( 'Manual test view present', 'hypercart-server-monitor' ),
+				'status' => file_exists( __DIR__ . '/views/tab-manual-test.php' ) ? 'ok' : 'fail',
+				'detail' => file_exists( __DIR__ . '/views/tab-manual-test.php' ) ? __( 'Found', 'hypercart-server-monitor' ) : __( 'Missing', 'hypercart-server-monitor' ),
+			),
+		);
 
 		require __DIR__ . '/views/tab-debug.php';
 	}
@@ -306,55 +376,17 @@ class AdminController {
 			wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'hypercart-server-monitor' ) ) );
 		}
 
-		// Run monitoring without logging to JSON.
+		// Run manual monitoring through the shared FSM path.
 		try {
-			$start_time = \Hypercart_Time::now();
-
-			// Log manual test start.
-			\Hypercart_Logger::info(
-				'hypercart-server-monitor',
-				'Manual test started from admin UI',
-				array( 'user' => wp_get_current_user()->user_login )
-			);
-
-			// Collect metrics.
-			$raw_metrics = $this->collect_metrics();
-
-			// Log collected metrics for debugging.
-			\Hypercart_Logger::debug(
-				'hypercart-server-monitor',
-				'Manual test metrics collected',
-				array( 'raw_metrics' => $raw_metrics )
-			);
-
-			// Calculate score (detailed format).
-			$scorer = new \Hypercart_Server_Monitor\Services\ScoringService();
-			$score  = $scorer->calculate_score( $raw_metrics, true );
-
-			// Validate score.
-			if ( ! is_array( $score ) || ! isset( $score['combined'] ) ) {
-				\Hypercart_Logger::error(
-					'hypercart-server-monitor',
-					'Scoring service returned invalid data',
-					array(
-						'score_type'  => gettype( $score ),
-						'score_value' => $score,
-					)
-				);
-				throw new \Exception( 'Scoring service returned invalid data. Check logs for details.' );
+			// Safeguard: do not bypass the FSM breaker flow from admin.
+			$result = \Hypercart_Server_Monitor\Plugin::get_instance()->run_manual_test();
+			if ( empty( $result['success'] ) ) {
+				throw new \Exception( $result['message'] ?? 'Manual test failed. Check logs for details.' );
 			}
 
-			$duration_ms = ( \Hypercart_Time::now() - $start_time ) * 1000;
-
-			// Log manual test completion.
-			\Hypercart_Logger::info(
-				'hypercart-server-monitor',
-				'Manual test completed',
-				array(
-					'score'       => $score['combined'],
-					'duration_ms' => $duration_ms,
-				)
-			);
+			$raw_metrics = $result['raw_metrics'] ?? array();
+			$score       = $result['score'] ?? array();
+			$duration_ms = $result['duration_ms'] ?? 0;
 
 			// Check if benchmark is supported.
 			$warnings = array();
@@ -367,7 +399,7 @@ class AdminController {
 					'score'       => $score,
 					'raw_metrics' => $raw_metrics,
 					'duration_ms' => $duration_ms,
-					'timestamp'   => \Hypercart_Time::format( 'Y-m-d H:i:s' ),
+					'timestamp'   => $result['timestamp'] ?? \Hypercart_Time::format( 'Y-m-d H:i:s' ),
 					'warnings'    => $warnings,
 					'logged'      => true,
 				)
@@ -383,7 +415,7 @@ class AdminController {
 			wp_send_json_error(
 				array(
 					'message' => $e->getMessage(),
-					'logged'  => true,
+					'logged'  => false,
 				)
 			);
 		}
@@ -403,7 +435,7 @@ class AdminController {
 
 		try {
 			// Get most recent sample from JSON.
-			$data = $this->repository->read();
+			$data = $this->repository->read( false );
 
 			// Debug logging.
 			\Hypercart_Logger::debug(
@@ -422,8 +454,7 @@ class AdminController {
 			if ( empty( $samples ) ) {
 				throw new \Exception(
 					'No benchmark data available. The JSON file is empty. ' .
-					'Manual tests do NOT save to JSON (by design). ' .
-					'Please wait for the next scheduled cron run (every 15 minutes), ' .
+					'Run a manual test or wait for the next scheduled cron run (every 15 minutes), ' .
 					'or check the Debug tab to see if cron is running properly.'
 				);
 			}
@@ -470,6 +501,36 @@ class AdminController {
 	}
 
 	/**
+	 * AJAX handler for breaker self test.
+	 */
+	public function ajax_run_breaker_self_test() {
+		// Verify nonce.
+		check_ajax_referer( 'hsm_debug', 'nonce' );
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+		}
+
+		$result = $this->state_store->run_breaker_self_test();
+		if ( empty( $result['success'] ) ) {
+			wp_send_json_error(
+				array(
+					'message' => $result['message'] ?? 'Breaker self test failed.',
+					'steps'   => $result['steps'] ?? array(),
+				)
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'message' => $result['message'] ?? 'Breaker self test completed.',
+				'steps'   => $result['steps'] ?? array(),
+			)
+		);
+	}
+
+	/**
 	 * Handle AJAX request to manually schedule cron.
 	 */
 	public function ajax_schedule_cron() {
@@ -482,24 +543,23 @@ class AdminController {
 		}
 
 		try {
-			// Check if already scheduled.
-			$next_run = wp_next_scheduled( 'hypercart_server_monitor_run' );
-			if ( $next_run ) {
+			$scheduler = new \Hypercart_Server_Monitor\Services\SchedulerService();
+			$next_run  = $scheduler->get_next_run();
+			if ( $scheduler->is_scheduled() ) {
 				wp_send_json_error(
 					array(
 						'message'  => 'Cron is already scheduled',
-						'next_run' => \Hypercart_Time::format( 'Y-m-d H:i:s', $next_run ),
+						'next_run' => $next_run ? \Hypercart_Time::format( 'Y-m-d H:i:s', $next_run ) : null,
 					)
 				);
 			}
 
 			// Schedule cron.
-			$scheduler = new \Hypercart_Server_Monitor\Services\SchedulerService( $this->state_store );
 			$scheduler->schedule();
 
 			// Verify it was scheduled.
-			$next_run = wp_next_scheduled( 'hypercart_server_monitor_run' );
-			if ( ! $next_run ) {
+			$next_run = $scheduler->get_next_run();
+			if ( ! $scheduler->is_scheduled() || ! $next_run ) {
 				throw new \Exception( 'Failed to schedule cron. Check logs for details.' );
 			}
 
@@ -533,18 +593,4 @@ class AdminController {
 		}
 	}
 
-	/**
-	 * Collect benchmark metrics.
-	 *
-	 * @return array Benchmark metrics.
-	 */
-	private function collect_metrics() {
-		$benchmark_collector = new \Hypercart_Server_Monitor\Metrics\BenchmarkCollector();
-		$benchmark_data      = $benchmark_collector->collect();
-
-		return array(
-			'benchmark' => $benchmark_data,
-		);
-	}
 }
-
