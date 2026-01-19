@@ -72,6 +72,9 @@ Yes! The synthetic PHP benchmark works on all operating systems and environments
 
 ## Changelog
 
+### 0.4.9 - 2026-01-20
+*   Added Remote update functionality
+
 ### 0.4.8 - 2026-01-18
 *   Improved: Hide noindex notice from non-admin users
 *   Security: Reduced information disclosure to public users
