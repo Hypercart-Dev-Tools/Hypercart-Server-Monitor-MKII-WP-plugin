@@ -5,6 +5,15 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.10] - 2026-01-18
+
+### Updated
+- Admin UI labels clarify per-run iterations and rename benchmark columns to Run 1-3; added total samples row in dashboard metrics.
+- Admin page title now includes plugin version and menu label reflects full product name.
+- Debug self-test note now links to the Hypercart Helper SECURITY-README viewer (clickable).
+- Frontend shortcode metrics table now includes scraper-friendly data attributes and structured value/unit spans.
+- Changelog wording aligned to implementation (noindex via `wp_head`, legacy collectors marked as deprecated but present).
+
 ## [0.4.7] - 2026-01-18
 
 ### Added
