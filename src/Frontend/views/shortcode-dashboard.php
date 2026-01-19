@@ -68,7 +68,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</p>
 
 			<!-- Benchmark Details -->
-			<table class="widefat hsm-metrics-table">
+			<?php
+			$benchmark_avg        = (float) ( $raw_metrics['benchmark']['avg_time_ms'] ?? 0 );
+			$benchmark_min        = (float) ( $raw_metrics['benchmark']['min_time_ms'] ?? 0 );
+			$benchmark_max        = (float) ( $raw_metrics['benchmark']['max_time_ms'] ?? 0 );
+			$benchmark_iterations = (int) ( $raw_metrics['benchmark']['iterations'] ?? 0 );
+			?>
+			<table class="widefat hsm-metrics-table" data-hsm-table="benchmark" data-hsm-sample-ts-utc="<?php echo esc_attr( $timestamp ); ?>">
 				<thead>
 					<tr>
 						<th><?php esc_html_e( 'Metric', 'hypercart-server-monitor' ); ?></th>
@@ -76,21 +82,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</tr>
 				</thead>
 				<tbody>
-					<tr>
-						<td><?php esc_html_e( 'Benchmark Time (avg)', 'hypercart-server-monitor' ); ?> <span style="color: #666; font-size: 0.9em;">↓ <?php esc_html_e( 'lower is better', 'hypercart-server-monitor' ); ?></span></td>
-						<td><?php echo esc_html( number_format( $raw_metrics['benchmark']['avg_time_ms'] ?? 0, 2 ) ); ?> ms</td>
+					<tr data-hsm-metric="benchmark_avg_ms">
+						<td data-hsm-label="benchmark_avg_ms"><?php esc_html_e( 'Benchmark Time (avg)', 'hypercart-server-monitor' ); ?> <span style="color: #666; font-size: 0.9em;">↓ <?php esc_html_e( 'lower is better', 'hypercart-server-monitor' ); ?></span></td>
+						<td data-hsm-value="<?php echo esc_attr( $benchmark_avg ); ?>" data-hsm-unit="ms">
+							<span class="hsm-metric-value" data-hsm-value><?php echo esc_html( number_format( $benchmark_avg, 2 ) ); ?></span>
+							<span class="hsm-metric-unit" data-hsm-unit>ms</span>
+						</td>
 					</tr>
-					<tr>
-						<td><?php esc_html_e( 'Fastest Run', 'hypercart-server-monitor' ); ?></td>
-						<td><?php echo esc_html( number_format( $raw_metrics['benchmark']['min_time_ms'] ?? 0, 2 ) ); ?> ms</td>
+					<tr data-hsm-metric="benchmark_min_ms">
+						<td data-hsm-label="benchmark_min_ms"><?php esc_html_e( 'Fastest Run', 'hypercart-server-monitor' ); ?></td>
+						<td data-hsm-value="<?php echo esc_attr( $benchmark_min ); ?>" data-hsm-unit="ms">
+							<span class="hsm-metric-value" data-hsm-value><?php echo esc_html( number_format( $benchmark_min, 2 ) ); ?></span>
+							<span class="hsm-metric-unit" data-hsm-unit>ms</span>
+						</td>
 					</tr>
-					<tr>
-						<td><?php esc_html_e( 'Slowest Run', 'hypercart-server-monitor' ); ?></td>
-						<td><?php echo esc_html( number_format( $raw_metrics['benchmark']['max_time_ms'] ?? 0, 2 ) ); ?> ms</td>
+					<tr data-hsm-metric="benchmark_max_ms">
+						<td data-hsm-label="benchmark_max_ms"><?php esc_html_e( 'Slowest Run', 'hypercart-server-monitor' ); ?></td>
+						<td data-hsm-value="<?php echo esc_attr( $benchmark_max ); ?>" data-hsm-unit="ms">
+							<span class="hsm-metric-value" data-hsm-value><?php echo esc_html( number_format( $benchmark_max, 2 ) ); ?></span>
+							<span class="hsm-metric-unit" data-hsm-unit>ms</span>
+						</td>
 					</tr>
-					<tr>
-						<td><?php esc_html_e( 'Iterations', 'hypercart-server-monitor' ); ?></td>
-						<td><?php echo esc_html( $raw_metrics['benchmark']['iterations'] ?? 0 ); ?></td>
+					<tr data-hsm-metric="benchmark_iterations">
+						<td data-hsm-label="benchmark_iterations"><?php esc_html_e( 'Iterations', 'hypercart-server-monitor' ); ?></td>
+						<td data-hsm-value="<?php echo esc_attr( $benchmark_iterations ); ?>">
+							<span class="hsm-metric-value" data-hsm-value><?php echo esc_html( $benchmark_iterations ); ?></span>
+						</td>
 					</tr>
 				</tbody>
 			</table>
