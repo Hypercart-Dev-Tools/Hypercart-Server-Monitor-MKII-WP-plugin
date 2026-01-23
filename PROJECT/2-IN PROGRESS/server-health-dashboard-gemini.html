@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Health 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Slate-50 */
+        }
+        
+        /* Custom utilities for the chart simulation */
+        .chart-grid-line {
+            stroke: #e2e8f0;
+            stroke-dasharray: 4, 4;
+        }
+        .chart-path {
+            fill: none;
+            stroke: #0ea5e9; /* Sky-500 */
+            stroke-width: 2;
+        }
+        .chart-dot {
+            fill: #0ea5e9;
+            stroke: #ffffff;
+            stroke-width: 2;
+        }
+    </style>
+</head>
+<body class="text-slate-900 antialiased p-6 md:p-10">
+
+    <div class="max-w-5xl mx-auto space-y-6">
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-slate-900">Server Health 2026</h1>
+                <p class="text-slate-500 mt-1">Real-time performance benchmarks and monitoring.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm">
+                    <span class="mr-1.5 h-2 w-2 rounded-full bg-emerald-500"></span>
+                    Read-only view
+                </span>
+            </div>
+        </div>
+
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-amber-600 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+            <div>
+                <h5 class="font-medium mb-1">Search Engine Indexing Disabled</h5>
+                <p class="text-amber-700/90">This page is not indexed by search engines. Change this by adding <code class="bg-amber-100 px-1 py-0.5 rounded font-mono text-xs">noindex="false"</code> to the shortcode.</p>
+            </div>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-2">
+            
+            <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+                <div class="flex flex-col space-y-1.5 p-6">
+                    <h3 class="font-semibold leading-none tracking-tight">Current Performance Score</h3>
+                    <p class="text-sm text-slate-500">Based on PHP benchmark execution time (lower time = higher score)</p>
+                </div>
+                <div class="p-6 pt-0">
+                    <div class="flex flex-col items-center justify-center py-6 bg-slate-50/50 rounded-lg border border-slate-100 border-dashed">
+                        <span class="text-6xl font-bold text-emerald-600 tracking-tighter">100.0</span>
+                        <div class="mt-2 inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                            EXCELLENT
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <p class="text-xs text-slate-400">Last updated: <span class="font-mono text-slate-600">2026-01-23 08:32:12</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+                <div class="flex flex-col space-y-1.5 p-6">
+                    <h3 class="font-semibold leading-none tracking-tight">Benchmark Metrics</h3>
+                    <p class="text-sm text-slate-500">Detailed breakdown of the current run execution.</p>
+                </div>
+                <div class="p-6 pt-0">
+                    <div class="space-y-4">
+                        
+                        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                            <div class="space-y-1">
+                                <p class="text-sm font-medium leading-none text-slate-700">Benchmark Time (avg)</p>
+                                <p class="text-xs text-slate-500">↓ lower is better</p>
+                            </div>
+                            <div class="font-mono text-lg font-semibold text-slate-900">14.16 <span class="text-sm text-slate-500 font-sans">ms</span></div>
+                        </div>
+
+                        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                            <div class="space-y-1">
+                                <p class="text-sm font-medium leading-none text-slate-700">Fastest Run</p>
+                            </div>
+                            <div class="font-mono text-sm font-medium text-emerald-600">13.65 ms</div>
+                        </div>
+
+                         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                            <div class="space-y-1">
+                                <p class="text-sm font-medium leading-none text-slate-700">Slowest Run</p>
+                            </div>
+                            <div class="font-mono text-sm font-medium text-amber-600">15.16 ms</div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="space-y-1">
+                                <p class="text-sm font-medium leading-none text-slate-700">Iterations</p>
+                            </div>
+                            <div class="font-mono text-sm font-medium text-slate-900">3</div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6">
+                <h3 class="font-semibold leading-none tracking-tight">Health Score Trend</h3>
+                <p class="text-sm text-slate-500">Performance stability over the last 24 hours.</p>
+            </div>
+            <div class="p-6 pt-0">
+                <div class="relative h-[200px] w-full bg-slate-50/50 rounded border border-slate-100 flex items-end justify-between px-4 pb-4 overflow-hidden">
+                     <svg class="absolute inset-0 h-full w-full p-4" preserveAspectRatio="none">
+                        <line x1="0" y1="20%" x2="100%" y2="20%" class="chart-grid-line" />
+                        <line x1="0" y1="50%" x2="100%" y2="50%" class="chart-grid-line" />
+                        <line x1="0" y1="80%" x2="100%" y2="80%" class="chart-grid-line" />
+                        <polyline points="0,10 50,10 100,10 150,12 200,10 250,10 300,10 350,10 400,10 450,10 500,10 550,10 600,10 650,10 700,10 750,10 800,10 850,10 900,10 950,10 1000,10" 
+                                  fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    
+                    <div class="absolute bottom-2 left-4 text-[10px] text-slate-400">06:47 AM</div>
+                    <div class="absolute bottom-2 right-4 text-[10px] text-slate-400">08:32 AM</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm overflow-hidden">
+            <div class="flex flex-col space-y-1.5 p-6 border-b border-slate-100">
+                <h3 class="font-semibold leading-none tracking-tight">Recent Samples</h3>
+                <p class="text-sm text-slate-500">A log of the most recent benchmark executions.</p>
+            </div>
+            <div class="p-0">
+                <div class="relative w-full overflow-auto">
+                    <table class="w-full caption-bottom text-sm text-left">
+                        <thead class="[&_tr]:border-b">
+                            <tr class="border-b border-slate-200 bg-slate-50/50 transition-colors hover:bg-slate-50/50">
+                                <th class="h-10 px-6 align-middle font-medium text-slate-500">Timestamp</th>
+                                <th class="h-10 px-6 align-middle font-medium text-slate-500">Score</th>
+                                <th class="h-10 px-6 align-middle font-medium text-slate-500">Label</th>
+                                <th class="h-10 px-6 align-middle font-medium text-slate-500 text-right">Benchmark 1</th>
+                                <th class="h-10 px-6 align-middle font-medium text-slate-500 text-right">Benchmark 2</th>
+                                <th class="h-10 px-6 align-middle font-medium text-slate-500 text-right">Benchmark 3</th>
+                            </tr>
+                        </thead>
+                        <tbody class="[&_tr:last-child]:border-0">
+                            
+                            <tr class="border-b border-slate-100 transition-colors hover:bg-slate-50/50">
+                                <td class="p-4 px-6 align-middle font-mono text-xs text-slate-600">2026-01-23 08:32:12</td>
+                                <td class="p-4 px-6 align-middle font-medium text-emerald-600">100.0</td>
+                                <td class="p-4 px-6 align-middle">
+                                    <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">Excellent</span>
+                                </td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">13.68 ms</td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">15.16 ms</td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">13.65 ms</td>
+                            </tr>
+                            
+                            <tr class="border-b border-slate-100 transition-colors hover:bg-slate-50/50">
+                                <td class="p-4 px-6 align-middle font-mono text-xs text-slate-600">2026-01-23 08:17:21</td>
+                                <td class="p-4 px-6 align-middle font-medium text-emerald-600">100.0</td>
+                                <td class="p-4 px-6 align-middle">
+                                    <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">Excellent</span>
+                                </td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">9.69 ms</td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">10.04 ms</td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">11.50 ms</td>
+                            </tr>
+
+                            <tr class="border-b border-slate-100 transition-colors hover:bg-slate-50/50">
+                                <td class="p-4 px-6 align-middle font-mono text-xs text-slate-600">2026-01-23 08:02:12</td>
+                                <td class="p-4 px-6 align-middle font-medium text-emerald-600">100.0</td>
+                                <td class="p-4 px-6 align-middle">
+                                    <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">Excellent</span>
+                                </td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">12.55 ms</td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">12.50 ms</td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">12.53 ms</td>
+                            </tr>
+
+                            <tr class="border-b border-slate-100 transition-colors hover:bg-slate-50/50">
+                                <td class="p-4 px-6 align-middle font-mono text-xs text-slate-600">2026-01-23 07:47:13</td>
+                                <td class="p-4 px-6 align-middle font-medium text-emerald-600">100.0</td>
+                                <td class="p-4 px-6 align-middle">
+                                    <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">Excellent</span>
+                                </td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">11.57 ms</td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">14.31 ms</td>
+                                <td class="p-4 px-6 align-middle text-right font-mono text-slate-600">14.04 ms</td>
+                            </tr>
+                            
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

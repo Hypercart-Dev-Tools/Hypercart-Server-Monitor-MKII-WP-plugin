@@ -5,6 +5,23 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.12] - 2026-01-23
+
+### Added
+- **Modern Frontend Design**: Complete redesign of the frontend shortcode dashboard with a modern, Tailwind CSS-inspired aesthetic.
+  - New `assets/frontend.css` file (498 lines) with modern styling including Inter font family, card-based layout, and slate color palette.
+  - Restructured `src/Frontend/views/shortcode-dashboard.php` with semantic HTML and modern components.
+  - New header section with "Server Health 2026" title and read-only badge indicator.
+  - Modern notice/alert boxes with SVG icons for warnings and information.
+  - 2-column grid layout separating "Current Performance Score" and "Benchmark Metrics" into distinct cards.
+  - Color-coded score badges (Excellent/Good/Warning/Critical) with corresponding visual styling.
+  - Metrics displayed as clean list items instead of table format for better readability.
+  - Completely redesigned Recent Samples table with modern styling, hover effects, and improved typography.
+  - Timestamp column header in Recent Samples table now displays the timezone (e.g., "Timestamp (America/New_York)" or "Timestamp (UTC)").
+  - Responsive design with mobile-first approach and breakpoints at 768px.
+  - **Files Modified**: `src/Plugin.php` (now enqueues `frontend.css` instead of `admin.css` for shortcode)
+  - **Files Created**: `assets/frontend.css`
+
 ## [0.4.11] - 2026-01-20
 
 ### Added

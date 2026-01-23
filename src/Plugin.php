@@ -194,7 +194,7 @@ class Plugin {
 
 		wp_enqueue_style(
 			'hypercart-server-monitor-frontend',
-			plugins_url( 'assets/admin.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			plugins_url( 'assets/frontend.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
 			array(),
 			HYPERCART_SERVER_MONITOR_VERSION
 		);
