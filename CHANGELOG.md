@@ -5,6 +5,15 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.11] - 2026-01-20
+
+### Added
+- **Timezone Notice**: Both Backend Plugin Dashboard and Frontend Shortcode Dashboard now display a notice showing the current timezone being used for time displays.
+  - Notice format: "Note: Showing Local Time ({timezone}). You may need to convert to UTC elsewhere."
+  - Uses WordPress `wp_timezone_string()` to display the configured timezone name.
+  - Helps users understand that displayed times are in their local timezone and may need conversion to UTC for other purposes.
+  - **Files Modified**: `src/Admin/views/tab-dashboard.php`, `src/Frontend/views/shortcode-dashboard.php`
+
 ## [0.4.10] - 2026-01-18
 
 ### Updated

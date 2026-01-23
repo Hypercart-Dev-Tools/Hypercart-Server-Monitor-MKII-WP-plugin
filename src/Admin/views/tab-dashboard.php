@@ -17,6 +17,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="notice notice-info inline">
 		<p><?php esc_html_e( 'Frontend read-only embed: use [hypercart_server_monitor_dashboard]', 'hypercart-server-monitor' ); ?></p>
 	</div>
+	<div class="notice notice-info inline">
+		<p>
+			<?php
+			$timezone_string = wp_timezone_string();
+			printf(
+				/* translators: %s: timezone name */
+				esc_html__( 'Note: Showing Local Time (%s). You may need to convert to UTC elsewhere.', 'hypercart-server-monitor' ),
+				esc_html( $timezone_string )
+			);
+			?>
+		</p>
+	</div>
 	<!-- Current Health Score -->
 	<div class="hsm-card hsm-health-score">
 		<h2><?php esc_html_e( 'Current Performance Score', 'hypercart-server-monitor' ); ?></h2>
