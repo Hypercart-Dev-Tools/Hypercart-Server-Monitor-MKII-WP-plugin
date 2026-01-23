@@ -27,7 +27,6 @@ define( 'HYPERCART_SERVER_MONITOR_PLUGIN_FILE', __FILE__ );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
-define('HYPERCART_SERVER_MONITOR_PLUGIN_GITHUB_UPDATE_TOKEN', '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');
 
 // Include the Plugin Update Checker
 require_once HYPERCART_SERVER_MONITOR_PLUGIN_DIR . 'lib/plugin-update-checker/plugin-update-checker.php';
@@ -41,10 +40,6 @@ $update_checker = PucFactory::buildUpdateChecker(
 // Optional: Set the branch that contains the stable release.
 $update_checker->setBranch( 'main' );
 
-//Optional: If you're using a private repository, specify the access token like this:
-if ( defined('HYPERCART_SERVER_MONITOR_PLUGIN_GITHUB_UPDATE_TOKEN') && ! empty(HYPERCART_SERVER_MONITOR_PLUGIN_GITHUB_UPDATE_TOKEN) ) {
-    $update_checker->setAuthentication(HYPERCART_SERVER_MONITOR_PLUGIN_GITHUB_UPDATE_TOKEN);
-}
 
 /**
  * Display admin notice for missing Hypercart Helper.
