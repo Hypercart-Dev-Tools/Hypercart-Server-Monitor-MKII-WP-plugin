@@ -12,6 +12,16 @@ namespace Hypercart_Server_Monitor;
  */
 class Plugin {
 	/**
+	 * Option key for last cron run timestamp.
+	 */
+	const OPTION_LAST_CRON_RUN = 'hypercart_server_monitor_last_cron_run';
+
+	/**
+	 * Transient key for cron health check.
+	 */
+	const TRANSIENT_CRON_HEALTH = 'hypercart_server_monitor_cron_health_check';
+
+	/**
 	 * Plugin instance.
 	 *
 	 * @var Plugin|null
@@ -109,6 +119,46 @@ class Plugin {
 			'plugin_action_links_' . HYPERCART_SERVER_MONITOR_PLUGIN_BASENAME,
 			array( $this, 'add_settings_link' )
 		);
+
+		// Register cron health REST endpoint.
+		add_action( 'rest_api_init', array( $this, 'register_cron_health_endpoint' ) );
+	}
+
+	/**
+	 * Register cron health REST endpoint.
+	 */
+	public function register_cron_health_endpoint() {
+		register_rest_route(
+			'cron-health/v1',
+			'/status',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'get_cron_health_status' ),
+				'permission_callback' => '__return_true',
+			)
+		);
+	}
+
+	/**
+	 * Get cron health status.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function get_cron_health_status() {
+		$last_run = get_option( self::OPTION_LAST_CRON_RUN );
+		$last_run = $last_run ? (int) $last_run : null;
+
+		$next_run = wp_next_scheduled( Services\SchedulerService::CRON_HOOK );
+		$transient = get_transient( self::TRANSIENT_CRON_HEALTH );
+
+		$status = ( $last_run && $next_run && false !== $transient ) ? 'healthy' : 'unhealthy';
+
+		$response = array(
+			'status'   => $status,
+			'last_run' => $last_run ? gmdate( 'c', $last_run ) : null,
+		);
+
+		return new \WP_REST_Response( $response, 200 );
 	}
 
 	/**
@@ -194,7 +244,7 @@ class Plugin {
 
 		wp_enqueue_style(
 			'hypercart-server-monitor-frontend',
-			plugins_url( 'assets/admin.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			plugins_url( 'assets/frontend.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
 			array(),
 			HYPERCART_SERVER_MONITOR_VERSION
 		);
@@ -266,6 +316,12 @@ class Plugin {
 		);
 
 		$start_time = \Hypercart_Time::now();
+
+		// Update cron health check indicators if this is a scheduled run.
+		if ( ! empty( $options['use_scheduled_state'] ) ) {
+			update_option( self::OPTION_LAST_CRON_RUN, $start_time );
+			set_transient( self::TRANSIENT_CRON_HEALTH, $start_time, HOUR_IN_SECONDS );
+		}
 
 		\Hypercart_Logger::info(
 			'hypercart-server-monitor',

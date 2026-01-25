@@ -128,6 +128,7 @@ class AdminController {
 			'hsmAdmin',
 			array(
 				'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
+				'restUrl'    => rest_url(),
 				'nonce'      => wp_create_nonce( 'hsm_manual_test' ),
 				'emailNonce' => wp_create_nonce( 'hsm_send_test_email' ),
 				'debugNonce' => wp_create_nonce( 'hsm_debug' ),

@@ -150,6 +150,90 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<?php endif; ?>
 	</div>
 
+	<!-- Cron Health Check -->
+	<div class="hsm-card">
+		<h2><?php esc_html_e( 'Cron Health Check', 'hypercart-server-monitor' ); ?></h2>
+		<p class="description">
+			<?php esc_html_e( 'Monitor cron execution health via REST API endpoint. This helps external monitoring tools verify that scheduled tasks are running properly.', 'hypercart-server-monitor' ); ?>
+		</p>
+
+		<!-- How it Works Explanation -->
+		<div style="background: #f0f6fc; border-left: 4px solid #0073aa; padding: 12px 15px; margin-bottom: 20px;">
+			<h3 style="margin-top: 0; font-size: 14px; font-weight: 600;">
+				<?php esc_html_e( 'How it works:', 'hypercart-server-monitor' ); ?>
+			</h3>
+			<div id="hsm-health-explanation" style="font-size: 13px; line-height: 1.6;">
+				<p style="margin: 8px 0;">
+					<?php esc_html_e( 'The health check endpoint returns "healthy" when all of the following conditions are met:', 'hypercart-server-monitor' ); ?>
+				</p>
+				<ul style="margin: 8px 0 8px 20px;">
+					<li><?php esc_html_e( 'Cron has executed at least once (last_run timestamp exists)', 'hypercart-server-monitor' ); ?></li>
+					<li><?php esc_html_e( 'Next cron run is scheduled in WordPress', 'hypercart-server-monitor' ); ?></li>
+					<li><?php esc_html_e( 'Health transient is valid (updated within the last hour)', 'hypercart-server-monitor' ); ?></li>
+				</ul>
+				<p style="margin: 8px 0;">
+					<?php esc_html_e( 'The endpoint updates automatically every 15 minutes when the scheduled cron runs. No authentication required - perfect for external monitoring services like UptimeRobot, Pingdom, or custom scripts.', 'hypercart-server-monitor' ); ?>
+				</p>
+				<p style="margin: 8px 0;">
+					<strong><?php esc_html_e( 'Response format:', 'hypercart-server-monitor' ); ?></strong>
+					<code style="display: block; background: #fff; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 3px;">{"status":"healthy","last_run":"2026-01-25T14:23:03+00:00"}</code>
+				</p>
+			</div>
+			<button type="button" class="button button-small" id="hsm-copy-explanation" style="margin-top: 10px;">
+				<span class="dashicons dashicons-clipboard" style="font-size: 16px; vertical-align: middle;"></span>
+				<?php esc_html_e( 'Copy Explanation', 'hypercart-server-monitor' ); ?>
+			</button>
+		</div>
+
+		<table class="widefat">
+			<tbody>
+				<tr>
+					<th><?php esc_html_e( 'REST Endpoint', 'hypercart-server-monitor' ); ?></th>
+					<td>
+						<code><?php echo esc_url( rest_url( 'cron-health/v1/status' ) ); ?></code>
+						<button type="button" class="button button-small" id="hsm-copy-endpoint" style="margin-left: 10px;">
+							<?php esc_html_e( 'Copy URL', 'hypercart-server-monitor' ); ?>
+						</button>
+					</td>
+				</tr>
+				<tr>
+					<th><?php esc_html_e( 'Last Cron Run', 'hypercart-server-monitor' ); ?></th>
+					<td>
+						<?php
+						$last_cron_run = get_option( \Hypercart_Server_Monitor\Plugin::OPTION_LAST_CRON_RUN );
+						if ( $last_cron_run ) {
+							echo esc_html( \Hypercart_Time::format( 'Y-m-d H:i:s', $last_cron_run ) );
+							$time_ago = human_time_diff( $last_cron_run, \Hypercart_Time::now() );
+							echo ' <span class="description">(' . esc_html( sprintf( __( '%s ago', 'hypercart-server-monitor' ), $time_ago ) ) . ')</span>';
+						} else {
+							esc_html_e( 'Never', 'hypercart-server-monitor' );
+						}
+						?>
+					</td>
+				</tr>
+				<tr>
+					<th><?php esc_html_e( 'Health Status', 'hypercart-server-monitor' ); ?></th>
+					<td id="hsm-cron-health-status">
+						<span class="hsm-spinner" style="display: inline-block;">
+							<span class="spinner is-active" style="float: none; margin: 0 5px 0 0;"></span>
+							<?php esc_html_e( 'Checking...', 'hypercart-server-monitor' ); ?>
+						</span>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<div style="margin-top: 15px;">
+			<button type="button" id="hsm-test-cron-health" class="button button-secondary">
+				<span class="dashicons dashicons-update"></span>
+				<?php esc_html_e( 'Test Health Endpoint', 'hypercart-server-monitor' ); ?>
+			</button>
+			<p class="description">
+				<?php esc_html_e( 'Manually test the cron health REST endpoint to verify it\'s working correctly.', 'hypercart-server-monitor' ); ?>
+			</p>
+		</div>
+	</div>
+
 	<!-- Self Tests -->
 	<div class="hsm-card">
 		<h2><?php esc_html_e( 'Self Tests', 'hypercart-server-monitor' ); ?></h2>
