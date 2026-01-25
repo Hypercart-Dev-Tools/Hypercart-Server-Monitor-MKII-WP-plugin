@@ -68,7 +68,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				$timezone_string = wp_timezone_string();
 				printf(
 					/* translators: %s: timezone name */
-					esc_html__( 'Note: Showing Local Time (%s). You may need to convert to UTC elsewhere.', 'hypercart-server-monitor' ),
+					esc_html__( 'All timestamps are displayed in UTC (Coordinated Universal Time). Hover over any timestamp to see your local time (%s).', 'hypercart-server-monitor' ),
 					esc_html( $timezone_string )
 				);
 				?>
@@ -120,12 +120,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 					<div class="hsm-timestamp">
 						<?php
-						printf(
-							/* translators: %s: timestamp */
-							esc_html__( 'Last updated: %s', 'hypercart-server-monitor' ),
-							'<span class="hsm-timestamp-value">' . esc_html( \Hypercart_Time::format( 'Y-m-d H:i:s', strtotime( $timestamp ) ) ) . '</span>'
-						);
+						$ts_unix    = strtotime( $timestamp );
+						$utc_time   = gmdate( 'Y-m-d H:i:s', $ts_unix );
+						$local_time = \Hypercart_Time::format( 'Y-m-d H:i:s', $ts_unix );
+						$local_tz   = wp_timezone_string();
 						?>
+						<?php esc_html_e( 'Last updated:', 'hypercart-server-monitor' ); ?>
+						<span class="hsm-timestamp-value hsm-has-tooltip"
+							data-hsm-utc="<?php echo esc_attr( $utc_time ); ?>"
+							data-hsm-local="<?php echo esc_attr( $local_time ); ?>"
+							data-hsm-timezone="<?php echo esc_attr( $local_tz ); ?>"
+							title="<?php echo esc_attr( sprintf( 'Local time: %s (%s)', $local_time, $local_tz ) ); ?>">
+							<?php echo esc_html( $utc_time ); ?> UTC
+						</span>
 					</div>
 				</div>
 			</div>
@@ -245,21 +252,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="hsm-card">
 			<div class="hsm-card-header" style="border-bottom: 1px solid #f1f5f9;">
 				<h3 class="hsm-card-title"><?php esc_html_e( 'Recent Samples', 'hypercart-server-monitor' ); ?></h3>
-				<p class="hsm-card-description"><?php esc_html_e( 'A log of the most recent benchmark executions.', 'hypercart-server-monitor' ); ?></p>
+				<p class="hsm-card-description"><?php esc_html_e( 'A log of the most recent benchmark executions. Timestamps shown in UTC — hover to see local time.', 'hypercart-server-monitor' ); ?></p>
 			</div>
 			<div class="hsm-table-wrapper">
-				<table class="hsm-table">
+				<table class="hsm-table" data-hsm-timezone="UTC">
 					<thead>
 						<tr>
-							<th>
-								<?php
-								$timezone_string = wp_timezone_string();
-								printf(
-									/* translators: %s: timezone name */
-									esc_html__( 'Timestamp (%s)', 'hypercart-server-monitor' ),
-									esc_html( $timezone_string )
-								);
-								?>
+							<th data-hsm-column="timestamp">
+								<?php esc_html_e( 'Timestamp (UTC)', 'hypercart-server-monitor' ); ?>
 							</th>
 							<th><?php esc_html_e( 'Score', 'hypercart-server-monitor' ); ?></th>
 							<th><?php esc_html_e( 'Label', 'hypercart-server-monitor' ); ?></th>
@@ -292,9 +292,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 							} else {
 								$row_score_class = 'critical';
 							}
+
+							// Format timestamps for display and tooltip
+							if ( $ts ) {
+								$utc_time   = gmdate( 'Y-m-d H:i:s', $ts );
+								$local_time = \Hypercart_Time::format( 'Y-m-d H:i:s', $ts );
+								$local_tz   = wp_timezone_string();
+							}
 							?>
 							<tr>
-								<td class="hsm-table-timestamp"><?php echo esc_html( $ts ? \Hypercart_Time::format( 'Y-m-d H:i:s', $ts ) : 'N/A' ); ?></td>
+								<td class="hsm-table-timestamp hsm-has-tooltip"
+									data-hsm-utc="<?php echo esc_attr( $ts ? $utc_time : 'N/A' ); ?>"
+									data-hsm-local="<?php echo esc_attr( $ts ? $local_time : 'N/A' ); ?>"
+									data-hsm-timezone="<?php echo esc_attr( $ts ? $local_tz : '' ); ?>"
+									title="<?php echo esc_attr( $ts ? sprintf( 'Local time: %s (%s)', $local_time, $local_tz ) : 'N/A' ); ?>">
+									<?php echo esc_html( $ts ? $utc_time : 'N/A' ); ?>
+								</td>
 								<td class="hsm-table-score <?php echo esc_attr( $row_score_class ); ?>"><?php echo esc_html( number_format( $row_score, 1 ) ); ?></td>
 								<td>
 									<span class="hsm-table-label"><?php echo esc_html( $score['label'] ?? 'Unknown' ); ?></span>
