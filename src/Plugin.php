@@ -139,27 +139,79 @@ class Plugin {
 		);
 	}
 
-	/**
-	 * Get cron health status.
-	 *
-	 * @return \WP_REST_Response
-	 */
-	public function get_cron_health_status() {
-		$last_run = get_option( self::OPTION_LAST_CRON_RUN );
-		$last_run = $last_run ? (int) $last_run : null;
+		/**
+		 * Get cron health status.
+		 *
+		 * Applies a simple per-IP rate limit to the public cron health endpoint
+		 * before returning the current health status.
+		 *
+		 * @return \WP_REST_Response
+		 */
+		public function get_cron_health_status() {
+			// Per-IP rate limiting for the public cron health endpoint.
+			$remote_addr = isset( $_SERVER['REMOTE_ADDR'] ) ? $_SERVER['REMOTE_ADDR'] : 'unknown';
+			$ip          = is_string( $remote_addr ) ? trim( $remote_addr ) : 'unknown';
 
-		$next_run = wp_next_scheduled( Services\SchedulerService::CRON_HOOK );
-		$transient = get_transient( self::TRANSIENT_CRON_HEALTH );
+			$window_seconds = (int) apply_filters( 'hypercart_server_monitor_cron_health_window_seconds', 300 );
+			if ( $window_seconds <= 0 ) {
+				$window_seconds = 300;
+			}
 
-		$status = ( $last_run && $next_run && false !== $transient ) ? 'healthy' : 'unhealthy';
+			$max_requests = (int) apply_filters( 'hypercart_server_monitor_cron_health_rate_limit', 6 );
+			if ( $max_requests <= 0 ) {
+				$max_requests = 6;
+			}
 
-		$response = array(
-			'status'   => $status,
-			'last_run' => $last_run ? gmdate( 'c', $last_run ) : null,
-		);
+			$key = 'hypercart_server_monitor_cron_health_rl_' . md5( $ip );
+			$now = time();
 
-		return new \WP_REST_Response( $response, 200 );
-	}
+			$data = get_transient( $key );
+
+			if ( ! is_array( $data ) || ! isset( $data['expires_at'] ) || $data['expires_at'] <= $now ) {
+				$data = array(
+					'count'      => 1,
+					'expires_at' => $now + $window_seconds,
+				);
+			} elseif ( isset( $data['count'] ) && $data['count'] >= $max_requests ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Cron health endpoint rate limited',
+					array(
+						'ip'            => $ip,
+						'window'        => $window_seconds,
+						'max_requests'  => $max_requests,
+						'current_count' => (int) $data['count'],
+					)
+				);
+
+				$response = array(
+					'status'  => 'rate_limited',
+					'message' => __( 'Rate limit exceeded, try again later.', 'hypercart-server-monitor' ),
+				);
+
+				return new \WP_REST_Response( $response, 429 );
+			} else {
+				$data['count'] = isset( $data['count'] ) ? ( (int) $data['count'] + 1 ) : 1;
+			}
+
+			// Store updated rate limit window for this IP.
+			set_transient( $key, $data, $window_seconds );
+
+			$last_run = get_option( self::OPTION_LAST_CRON_RUN );
+			$last_run = $last_run ? (int) $last_run : null;
+
+			$next_run = wp_next_scheduled( Services\SchedulerService::CRON_HOOK );
+			$transient = get_transient( self::TRANSIENT_CRON_HEALTH );
+
+			$status = ( $last_run && $next_run && false !== $transient ) ? 'healthy' : 'unhealthy';
+
+			$response = array(
+				'status'   => $status,
+				'last_run' => $last_run ? gmdate( 'c', $last_run ) : null,
+			);
+
+			return new \WP_REST_Response( $response, 200 );
+		}
 
 	/**
 	 * Detect shortcode in post content and add noindex meta tag if needed.
