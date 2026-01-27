@@ -5,6 +5,74 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.13] - 2026-01-25
+
+### Added
+- **Cron Health Check REST API Endpoint**: New REST API endpoint for external monitoring tools to verify cron execution health.
+  - Endpoint: `/wp-json/cron-health/v1/status` returns JSON with `status` (healthy/unhealthy) and `last_run` timestamp.
+  - Tracks last cron run timestamp in WordPress options (`hypercart_server_monitor_last_cron_run`).
+  - Sets transient (`hypercart_server_monitor_cron_health_check`) with 1-hour expiration on each scheduled run.
+  - Health status determined by presence of last_run, next_run, and valid transient.
+  - Public endpoint (no authentication required) for easy integration with external monitoring services.
+  - **Files Modified**: `src/Plugin.php` (added constants, REST endpoint registration, and health check logic)
+
+- **Cron Health Check UI in Debug Tab**: New admin interface section for monitoring cron health.
+  - Displays REST endpoint URL with "Copy URL" button for easy sharing with monitoring tools.
+  - Shows last cron run timestamp with human-readable "time ago" format.
+  - Auto-loads health status on page load using AJAX call to REST endpoint.
+  - "Test Health Endpoint" button to manually refresh health status.
+  - Visual status indicators (✓ Healthy / ✗ Unhealthy) with color coding.
+  - **Explanation Section**: Added styled information box explaining how the health check works:
+    - Lists the three conditions required for "healthy" status (last_run exists, next_run scheduled, transient valid).
+    - Documents automatic update frequency (every 15 minutes).
+    - Shows example response format for integration reference.
+    - "Copy Explanation" button to copy the full explanation text to clipboard for sharing with team members or documentation.
+  - **Files Modified**: `src/Admin/views/tab-debug.php`, `assets/admin.js`, `src/Admin/AdminController.php`
+
+### Technical Details
+- REST endpoint uses WordPress REST API infrastructure with `register_rest_route()`.
+- Health check logic: `(last_run && next_run && transient_exists) ? 'healthy' : 'unhealthy'`.
+- Last run timestamp updated only for scheduled runs (not manual tests) via `use_scheduled_state` option.
+- JavaScript uses REST URL from localized script data (`hsmAdmin.restUrl`).
+- Copy-to-clipboard functionality uses temporary input element and `document.execCommand('copy')`.
+
+## [0.4.12] - 2026-01-25
+
+### Added
+- **Modern Frontend Design**: Complete redesign of the frontend shortcode dashboard with a modern, Tailwind CSS-inspired aesthetic.
+  - New `assets/frontend.css` file (570 lines) with modern styling including Inter font family, card-based layout, and slate color palette.
+  - Restructured `src/Frontend/views/shortcode-dashboard.php` with semantic HTML and modern components.
+  - New header section with "Server Health 2026" title and read-only badge indicator.
+  - Modern notice/alert boxes with SVG icons for warnings and information.
+  - 2-column grid layout separating "Current Performance Score" and "Benchmark Metrics" into distinct cards.
+  - Color-coded score badges (Excellent/Good/Warning/Critical) with corresponding visual styling.
+  - Metrics displayed as clean list items instead of table format for better readability.
+  - Completely redesigned Recent Samples table with modern styling, hover effects, and improved typography.
+  - Responsive design with mobile-first approach and breakpoints at 768px.
+  - **Files Modified**: `src/Plugin.php` (now enqueues `frontend.css` instead of `admin.css` for shortcode)
+  - **Files Created**: `assets/frontend.css`
+
+- **UTC Timestamp Display with Local Time Tooltips**: All timestamps now display in UTC with hover tooltips showing local time.
+  - All timestamps throughout the frontend dashboard now display in UTC (Coordinated Universal Time) for consistency and scraper-friendly data.
+  - Hovering over any timestamp reveals a modern CSS tooltip showing the equivalent local time in the WordPress configured timezone.
+  - Table header explicitly labeled "Timestamp (UTC)" for clarity.
+  - Data attributes added for scraping tools: `data-hsm-utc`, `data-hsm-local`, `data-hsm-timezone`, and `data-hsm-table="UTC"`.
+  - Timezone notice updated to explain: "All timestamps are displayed in UTC. Hover over any timestamp to see your local time."
+  - Native HTML `title` attribute provides fallback tooltip for accessibility and mobile devices.
+  - CSS tooltips automatically disabled on touch devices (mobile/tablet) to prevent UX issues.
+  - Tooltip styling matches modern design with dark background, rounded corners, and smooth animations.
+  - **Implementation**: Pure CSS solution (no JavaScript required) using `::before` and `::after` pseudo-elements.
+  - **Files Modified**: `src/Frontend/views/shortcode-dashboard.php`, `assets/frontend.css`
+
+## [0.4.11] - 2026-01-20
+
+### Added
+- **Timezone Notice**: Both Backend Plugin Dashboard and Frontend Shortcode Dashboard now display a notice showing the current timezone being used for time displays.
+  - Notice format: "Note: Showing Local Time ({timezone}). You may need to convert to UTC elsewhere."
+  - Uses WordPress `wp_timezone_string()` to display the configured timezone name.
+  - Helps users understand that displayed times are in their local timezone and may need conversion to UTC for other purposes.
+  - **Files Modified**: `src/Admin/views/tab-dashboard.php`, `src/Frontend/views/shortcode-dashboard.php`
+
 ## [0.4.10] - 2026-01-18
 
 ### Updated
