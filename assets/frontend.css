@@ -77,6 +77,8 @@
 
 /* Notice/Alert Boxes */
 .hsm-notice {
+	/* Force plugin font on notices even if the theme styles headings */
+	font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 	border-radius: 0.5rem;
 	padding: 1rem;
 	font-size: 0.875rem;
@@ -106,11 +108,13 @@
 }
 
 .hsm-notice-content h5 {
+	font-family: inherit;
 	font-weight: 500;
 	margin: 0 0 0.25rem 0;
 }
 
 .hsm-notice-content p {
+	font-family: inherit;
 	margin: 0;
 	opacity: 0.9;
 }
@@ -568,4 +572,3 @@
 
 	/* On mobile, the native title attribute will show instead */
 }
-
