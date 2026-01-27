@@ -5,6 +5,18 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.14] - 2026-01-27
+
+### Security
+
+- **Cron Health Endpoint Rate Limiting**: Added per-IP rate limiting to the public cron health REST API endpoint.
+	- Endpoint: `/wp-json/cron-health/v1/status` remains read-only but now enforces rate limits.
+	- Default limit: 6 requests per 5 minutes per IP (filter: `hypercart_server_monitor_cron_health_rate_limit`).
+	- Window: 300 seconds (5 minutes) per IP (filter: `hypercart_server_monitor_cron_health_window_seconds`).
+	- On limit exceeded, returns HTTP 429 with JSON body: `{"status":"rate_limited","message":"Rate limit exceeded, try again later."}`.
+	- Uses WordPress transients keyed by IP hash to avoid custom tables and respect caching layers.
+	- **Files Modified**: `src/Plugin.php`, `hypercart-server-monitor.php`
+
 ## [0.4.13] - 2026-01-25
 
 ### Added
