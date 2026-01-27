@@ -129,8 +129,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<span class="hsm-timestamp-value hsm-has-tooltip"
 							data-hsm-utc="<?php echo esc_attr( $utc_time ); ?>"
 							data-hsm-local="<?php echo esc_attr( $local_time ); ?>"
-							data-hsm-timezone="<?php echo esc_attr( $local_tz ); ?>"
-							title="<?php echo esc_attr( sprintf( 'Local time: %s (%s)', $local_time, $local_tz ) ); ?>">
+							data-hsm-timezone="<?php echo esc_attr( $local_tz ); ?>">
 							<?php echo esc_html( $utc_time ); ?> UTC
 						</span>
 					</div>
@@ -304,8 +303,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<td class="hsm-table-timestamp hsm-has-tooltip"
 									data-hsm-utc="<?php echo esc_attr( $ts ? $utc_time : 'N/A' ); ?>"
 									data-hsm-local="<?php echo esc_attr( $ts ? $local_time : 'N/A' ); ?>"
-									data-hsm-timezone="<?php echo esc_attr( $ts ? $local_tz : '' ); ?>"
-									title="<?php echo esc_attr( $ts ? sprintf( 'Local time: %s (%s)', $local_time, $local_tz ) : 'N/A' ); ?>">
+									data-hsm-timezone="<?php echo esc_attr( $ts ? $local_tz : '' ); ?>">
 									<?php echo esc_html( $ts ? $utc_time : 'N/A' ); ?>
 								</td>
 								<td class="hsm-table-score <?php echo esc_attr( $row_score_class ); ?>"><?php echo esc_html( number_format( $row_score, 1 ) ); ?></td>
