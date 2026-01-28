@@ -158,6 +158,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<th><?php esc_html_e( 'Run 1 (ms)', 'hypercart-server-monitor' ); ?></th>
 						<th><?php esc_html_e( 'Run 2 (ms)', 'hypercart-server-monitor' ); ?></th>
 						<th><?php esc_html_e( 'Run 3 (ms)', 'hypercart-server-monitor' ); ?></th>
+						<th><?php esc_html_e( 'Cron Health', 'hypercart-server-monitor' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -172,6 +173,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 						$time_1 = isset( $times[0] ) ? number_format( $times[0], 2 ) : 'N/A';
 						$time_2 = isset( $times[1] ) ? number_format( $times[1], 2 ) : 'N/A';
 						$time_3 = isset( $times[2] ) ? number_format( $times[2], 2 ) : 'N/A';
+
+						$cron_health_meta   = $sample['meta']['cron_health'] ?? array();
+						$cron_health_status = is_array( $cron_health_meta ) ? (string) ( $cron_health_meta['status'] ?? '' ) : '';
+						$cron_health_label  = '' !== $cron_health_status ? strtoupper( $cron_health_status ) : 'N/A';
+						$cron_health_class  = in_array( $cron_health_status, array( 'healthy', 'unhealthy' ), true ) ? $cron_health_status : 'unknown';
 						?>
 						<tr>
 							<td><?php echo esc_html( $ts ? \Hypercart_Time::format( 'Y-m-d H:i:s', $ts ) : 'N/A' ); ?></td>
@@ -180,6 +186,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<td><?php echo esc_html( $time_1 ); ?></td>
 							<td><?php echo esc_html( $time_2 ); ?></td>
 							<td><?php echo esc_html( $time_3 ); ?></td>
+							<td><span class="hsm-cron-health-status hsm-cron-health-<?php echo esc_attr( $cron_health_class ); ?>"><?php echo esc_html( $cron_health_label ); ?></span></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>

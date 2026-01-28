@@ -5,6 +5,20 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.15] - 2026-01-28
+
+### Added
+- **Cron Health Column in Recent Samples**: Added a new "Cron Health" column after Benchmark 3 in both the frontend and admin Recent Samples tables.
+  - Each sample now stores a cron health snapshot at run time for historical display.
+  - Status shows `HEALTHY`, `UNHEALTHY`, or `N/A` with color-coded styling.
+  - **Files Modified**: `src/Plugin.php`, `src/Frontend/views/shortcode-dashboard.php`, `src/Admin/views/tab-dashboard.php`, `assets/frontend.css`, `assets/admin.css`
+
+### Fixed
+- **Duplicate Tooltip on Timestamps**: Removed the native HTML `title` tooltip so only the custom CSS tooltip appears.
+  - **Files Modified**: `src/Frontend/views/shortcode-dashboard.php`
+- **Noindex Notice Font Mismatch**: Forced the "Search Engine Indexing Disabled" notice to use the plugin’s Inter font to match the rest of the dashboard.
+  - **Files Modified**: `assets/frontend.css`
+
 ## [0.4.14] - 2026-01-27
 
 ### Security

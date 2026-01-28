@@ -448,6 +448,24 @@
 	color: #dc2626;
 }
 
+.hsm-table-cron-health {
+	font-weight: 600;
+	font-size: 0.75rem;
+	letter-spacing: 0.02em;
+}
+
+.hsm-table-cron-health.healthy {
+	color: #059669;
+}
+
+.hsm-table-cron-health.unhealthy {
+	color: #dc2626;
+}
+
+.hsm-table-cron-health.unknown {
+	color: #64748b;
+}
+
 .hsm-table-label {
 	display: inline-flex;
 	align-items: center;

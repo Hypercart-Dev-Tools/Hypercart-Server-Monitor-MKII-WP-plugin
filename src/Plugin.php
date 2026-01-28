@@ -197,13 +197,9 @@ class Plugin {
 			// Store updated rate limit window for this IP.
 			set_transient( $key, $data, $window_seconds );
 
-			$last_run = get_option( self::OPTION_LAST_CRON_RUN );
-			$last_run = $last_run ? (int) $last_run : null;
-
-			$next_run = wp_next_scheduled( Services\SchedulerService::CRON_HOOK );
-			$transient = get_transient( self::TRANSIENT_CRON_HEALTH );
-
-			$status = ( $last_run && $next_run && false !== $transient ) ? 'healthy' : 'unhealthy';
+			$health_state = $this->determine_cron_health_state();
+			$last_run     = $health_state['last_run'];
+			$status       = $health_state['status'];
 
 			$response = array(
 				'status'   => $status,
@@ -212,6 +208,39 @@ class Plugin {
 
 			return new \WP_REST_Response( $response, 200 );
 		}
+
+	/**
+	 * Determine cron health state without rate limiting.
+	 *
+	 * This mirrors the public REST endpoint's health calculation but can be
+	 * reused internally (e.g., when persisting per-sample health snapshots).
+	 *
+	 * @param int|null $override_last_run Optional last run timestamp override.
+	 * @return array{status:string,last_run:?int,next_run:?int,transient_present:bool}
+	 */
+	private function determine_cron_health_state( $override_last_run = null ) {
+		$last_run = null;
+		if ( is_numeric( $override_last_run ) ) {
+			$last_run = (int) $override_last_run;
+		} else {
+			$last_run = get_option( self::OPTION_LAST_CRON_RUN );
+			$last_run = $last_run ? (int) $last_run : null;
+		}
+
+		$next_run = wp_next_scheduled( Services\SchedulerService::CRON_HOOK );
+		$next_run = $next_run ? (int) $next_run : null;
+
+		$transient_present = ( false !== get_transient( self::TRANSIENT_CRON_HEALTH ) );
+
+		$status = ( $last_run && $next_run && $transient_present ) ? 'healthy' : 'unhealthy';
+
+		return array(
+			'status'           => $status,
+			'last_run'         => $last_run,
+			'next_run'         => $next_run,
+			'transient_present' => $transient_present,
+		);
+	}
 
 	/**
 	 * Detect shortcode in post content and add noindex meta tag if needed.
@@ -428,6 +457,16 @@ class Plugin {
 			// Transition to writing state.
 			$this->state_store->transition_to( 'writing' );
 
+			// Snapshot cron health at the end of this run for historical display.
+			$override_last_run   = ! empty( $options['use_scheduled_state'] ) ? $start_time : null;
+			$cron_health_state   = $this->determine_cron_health_state( $override_last_run );
+			$cron_health_snapshot = array(
+				'status'            => $cron_health_state['status'],
+				'last_run_utc'      => $cron_health_state['last_run'] ? gmdate( 'c', $cron_health_state['last_run'] ) : null,
+				'next_run_utc'      => $cron_health_state['next_run'] ? gmdate( 'c', $cron_health_state['next_run'] ) : null,
+				'transient_present' => (bool) $cron_health_state['transient_present'],
+			);
+
 			// Persist to JSON.
 			$repository = new Persistence\HealthRepository();
 			$sample     = array(
@@ -438,6 +477,7 @@ class Plugin {
 					'collector'   => 'hypercart-server-monitor',
 					'duration_ms' => ( \Hypercart_Time::now() - $start_time ) * 1000,
 					'source'      => $options['source'],
+					'cron_health' => $cron_health_snapshot,
 				),
 			);
 

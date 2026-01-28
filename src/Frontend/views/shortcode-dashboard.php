@@ -265,6 +265,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<th class="text-right"><?php esc_html_e( 'Benchmark 1', 'hypercart-server-monitor' ); ?></th>
 							<th class="text-right"><?php esc_html_e( 'Benchmark 2', 'hypercart-server-monitor' ); ?></th>
 							<th class="text-right"><?php esc_html_e( 'Benchmark 3', 'hypercart-server-monitor' ); ?></th>
+							<th><?php esc_html_e( 'Cron Health', 'hypercart-server-monitor' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -278,6 +279,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 							$time_1 = isset( $times[0] ) ? number_format( $times[0], 2 ) : 'N/A';
 							$time_2 = isset( $times[1] ) ? number_format( $times[1], 2 ) : 'N/A';
 							$time_3 = isset( $times[2] ) ? number_format( $times[2], 2 ) : 'N/A';
+
+							// Cron health snapshot captured at run time (if available).
+							$cron_health_meta   = $sample['meta']['cron_health'] ?? array();
+							$cron_health_status = is_array( $cron_health_meta ) ? (string) ( $cron_health_meta['status'] ?? '' ) : '';
+							$cron_health_label  = '' !== $cron_health_status ? strtoupper( $cron_health_status ) : 'N/A';
+							$cron_health_class  = in_array( $cron_health_status, array( 'healthy', 'unhealthy' ), true ) ? $cron_health_status : 'unknown';
 
 							// Determine score class for table row
 							$row_score = $score['combined'] ?? 0;
@@ -313,6 +320,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_1 ); ?> ms</td>
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_2 ); ?> ms</td>
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_3 ); ?> ms</td>
+								<td class="hsm-table-cron-health <?php echo esc_attr( $cron_health_class ); ?>"><?php echo esc_html( $cron_health_label ); ?></td>
 							</tr>
 						<?php endforeach; ?>
 					</tbody>
