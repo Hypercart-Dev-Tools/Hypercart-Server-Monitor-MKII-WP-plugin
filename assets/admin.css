@@ -271,3 +271,21 @@
 	color: #d63638;
 	font-weight: 600;
 }
+
+.hsm-cron-health-status {
+	font-weight: 600;
+	font-size: 12px;
+	letter-spacing: 0.02em;
+}
+
+.hsm-cron-health-healthy {
+	color: #00a32a;
+}
+
+.hsm-cron-health-unhealthy {
+	color: #d63638;
+}
+
+.hsm-cron-health-unknown {
+	color: #646970;
+}
