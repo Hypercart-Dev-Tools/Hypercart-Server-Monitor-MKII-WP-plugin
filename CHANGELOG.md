@@ -13,6 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Status shows `HEALTHY`, `UNHEALTHY`, or `N/A` with color-coded styling.
   - **Files Modified**: `src/Plugin.php`, `src/Frontend/views/shortcode-dashboard.php`, `src/Admin/views/tab-dashboard.php`, `assets/frontend.css`, `assets/admin.css`
 
+### Performance
+- **AJAX Timeout Handling**: Added explicit 10-second timeout to cron health AJAX calls and 15-second timeout to breaker self-test AJAX calls.
+  - Timeout-specific error messages now displayed to users when requests exceed time limits.
+  - Improves robustness and user feedback per AGNETS.md guidelines.
+  - **Files Modified**: `assets/admin.js`
+
+- **Optimized FSM State Reads**: Refactored `run_breaker_self_test()` to reuse a single in-memory state snapshot within the lock.
+  - Reduced redundant `get_option()` calls from 5 to 1 per self-test execution.
+  - Maintains local state updates after each transition instead of re-reading from database.
+  - Improves performance and aligns with AGNETS.md "minimize DB calls" guidance.
+  - **Files Modified**: `src/Domain/FsmStateStore.php`
+
+### Changed
+- **Modern Clipboard API**: Replaced deprecated `document.execCommand('copy')` with async `navigator.clipboard.writeText()`.
+  - Graceful fallback to `execCommand` for older browsers that don't support the Clipboard API.
+  - Eliminates use of deprecated DOM manipulation for clipboard operations.
+  - **Files Modified**: `assets/admin.js`
+
 ### Fixed
 - **Duplicate Tooltip on Timestamps**: Removed the native HTML `title` tooltip so only the custom CSS tooltip appears.
   - **Files Modified**: `src/Frontend/views/shortcode-dashboard.php`

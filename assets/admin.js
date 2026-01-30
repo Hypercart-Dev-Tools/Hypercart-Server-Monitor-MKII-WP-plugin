@@ -19,6 +19,7 @@
 				$.ajax({
 					url: hsmAdmin.restUrl + 'cron-health/v1/status',
 					type: 'GET',
+					timeout: 10000, // 10 seconds
 					success: function(response) {
 						var html = '';
 						if (response.status === 'healthy') {
@@ -33,7 +34,11 @@
 						$statusCell.html(html);
 					},
 					error: function(xhr, status, error) {
-						$statusCell.html('<span class="hsm-status-error">✗ Error checking health</span> <span class="description">(' + error + ')</span>');
+						if (status === 'timeout') {
+							$statusCell.html('<span class="hsm-status-error">✗ Request timed out after 10s</span>');
+						} else {
+							$statusCell.html('<span class="hsm-status-error">✗ Error checking health</span> <span class="description">(' + error + ')</span>');
+						}
 					}
 				});
 			}
@@ -47,48 +52,89 @@
 			checkCronHealth();
 		});
 
+		// Helper function to copy text to clipboard
+		function copyToClipboard(text, $button, successText, originalText) {
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				// Modern async Clipboard API
+				navigator.clipboard.writeText(text).then(function() {
+					$button.text(successText);
+					setTimeout(function() {
+						$button.text(originalText);
+					}, 2000);
+				}).catch(function(err) {
+					// Fallback to execCommand on error
+					fallbackCopy(text, $button, successText, originalText);
+				});
+			} else {
+				// Fallback for older browsers
+				fallbackCopy(text, $button, successText, originalText);
+			}
+		}
+
+		function fallbackCopy(text, $button, successText, originalText) {
+			var $temp = $('<textarea>');
+			$('body').append($temp);
+			$temp.val(text).select();
+			try {
+				document.execCommand('copy');
+				$button.text(successText);
+				setTimeout(function() {
+					$button.text(originalText);
+				}, 2000);
+			} catch (err) {
+				console.error('Copy failed:', err);
+			}
+			$temp.remove();
+		}
+
 		// Copy endpoint URL button
 		$('#hsm-copy-endpoint').on('click', function() {
 			var $button = $(this);
 			var url = $button.prev('code').text();
-
-			// Create temporary input to copy text
-			var $temp = $('<input>');
-			$('body').append($temp);
-			$temp.val(url).select();
-			document.execCommand('copy');
-			$temp.remove();
-
-			// Show feedback
 			var originalText = $button.text();
-			$button.text('Copied!');
-			setTimeout(function() {
-				$button.text(originalText);
-			}, 2000);
+			copyToClipboard(url, $button, 'Copied!', originalText);
 		});
 
-	// Copy explanation button
-	$('#hsm-copy-explanation').on('click', function() {
-		var $button = $(this);
-		var $explanationDiv = $('#hsm-health-explanation');
+		// Copy explanation button
+		$('#hsm-copy-explanation').on('click', function() {
+			var $button = $(this);
+			var $explanationDiv = $('#hsm-health-explanation');
+			var explanationText = $explanationDiv.text().trim();
+			var originalHtml = $button.html();
+			var successHtml = '<span class="dashicons dashicons-yes" style="font-size: 16px; vertical-align: middle;"></span> Copied!';
 
-		// Extract plain text from the explanation div
-		var explanationText = $explanationDiv.text().trim();
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				// Modern async Clipboard API
+				navigator.clipboard.writeText(explanationText).then(function() {
+					$button.html(successHtml);
+					setTimeout(function() {
+						$button.html(originalHtml);
+					}, 2000);
+				}).catch(function(err) {
+					// Fallback to execCommand on error
+					fallbackCopyHtml(explanationText, $button, successHtml, originalHtml);
+				});
+			} else {
+				// Fallback for older browsers
+				fallbackCopyHtml(explanationText, $button, successHtml, originalHtml);
+			}
+		});
 
-		// Create temporary textarea to copy text
-		var $temp = $('<textarea>');
-		$('body').append($temp);
-		$temp.val(explanationText).select();
-		document.execCommand('copy');
-		$temp.remove();
-
-		// Show feedback
-		var originalHtml = $button.html();
-		$button.html('<span class="dashicons dashicons-yes" style="font-size: 16px; vertical-align: middle;"></span> Copied!');
-		setTimeout(function() {
-			$button.html(originalHtml);
-		}, 2000);
-	});
+		function fallbackCopyHtml(text, $button, successHtml, originalHtml) {
+			var $temp = $('<textarea>');
+			$('body').append($temp);
+			$temp.val(text).select();
+			try {
+				document.execCommand('copy');
+				$button.html(successHtml);
+				setTimeout(function() {
+					$button.html(originalHtml);
+				}, 2000);
+			} catch (err) {
+				console.error('Copy failed:', err);
+			}
+			$temp.remove();
+		}
 
 		var $breakerButton = $('#hsm-run-breaker-test');
 		if ($breakerButton.length) {
@@ -105,6 +151,7 @@
 				$.ajax({
 					url: hsmAdmin.ajaxUrl,
 					type: 'POST',
+					timeout: 15000, // 15 seconds for self-test
 					data: {
 						action: 'hsm_run_breaker_self_test',
 						nonce: hsmAdmin.debugNonce
@@ -133,7 +180,11 @@
 					error: function(xhr, status, error) {
 						$spinner.hide();
 						$breakerButton.prop('disabled', false);
-						$error.find('.hsm-breaker-error-message').text('AJAX Error: ' + error);
+						if (status === 'timeout') {
+							$error.find('.hsm-breaker-error-message').text('Request timed out after 15s');
+						} else {
+							$error.find('.hsm-breaker-error-message').text('AJAX Error: ' + error);
+						}
 						$error.show();
 					}
 				});
