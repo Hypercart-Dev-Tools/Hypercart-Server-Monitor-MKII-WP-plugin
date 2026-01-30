@@ -136,6 +136,70 @@
 			$temp.remove();
 		}
 
+	// Email notifications toggle
+	$('#hsm-email-notifications-toggle').on('change', function() {
+		var $toggle = $(this);
+		var $status = $('#hsm-email-toggle-status');
+		var $feedback = $('#hsm-email-toggle-feedback');
+		var enabled = $toggle.is(':checked') ? '1' : '0';
+		var nonce = $toggle.data('nonce');
+
+		// Disable toggle during save
+		$toggle.prop('disabled', true);
+		$feedback.hide();
+
+		// Save via AJAX
+		$.ajax({
+			url: hsmAdmin.ajaxUrl,
+			type: 'POST',
+			data: {
+				action: 'hsm_toggle_email_notifications',
+				nonce: nonce,
+				enabled: enabled
+			},
+			success: function(response) {
+				$toggle.prop('disabled', false);
+
+				if (response.success) {
+					// Update status text
+					$status.text(enabled === '1' ? 'Enabled' : 'Disabled');
+
+					// Show success feedback
+					$feedback
+						.removeClass('error')
+						.addClass('success')
+						.html('<span class="dashicons dashicons-yes"></span> ' + response.data.message)
+						.fadeIn()
+						.delay(3000)
+						.fadeOut();
+				} else {
+					// Revert toggle on error
+					$toggle.prop('checked', enabled === '0');
+
+					// Show error feedback
+					$feedback
+						.removeClass('success')
+						.addClass('error')
+						.html('<span class="dashicons dashicons-no"></span> ' + (response.data.message || 'Failed to save setting'))
+						.fadeIn();
+				}
+			},
+			error: function(xhr, status, error) {
+				$toggle.prop('disabled', false);
+
+				// Revert toggle on error
+				$toggle.prop('checked', enabled === '0');
+
+				// Show error feedback
+				$feedback
+					.removeClass('success')
+					.addClass('error')
+					.html('<span class="dashicons dashicons-no"></span> AJAX error: ' + error)
+					.fadeIn();
+			}
+		});
+	});
+
 		var $breakerButton = $('#hsm-run-breaker-test');
 		if ($breakerButton.length) {
 			$breakerButton.on('click', function() {

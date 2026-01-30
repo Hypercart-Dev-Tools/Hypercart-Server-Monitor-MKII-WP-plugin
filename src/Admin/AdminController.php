@@ -54,6 +54,7 @@ class AdminController {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_hsm_run_manual_test', array( $this, 'ajax_run_manual_test' ) );
 		add_action( 'wp_ajax_hsm_send_test_email', array( $this, 'ajax_send_test_email' ) );
+		add_action( 'wp_ajax_hsm_toggle_email_notifications', array( $this, 'ajax_toggle_email_notifications' ) );
 		add_action( 'wp_ajax_hsm_run_breaker_self_test', array( $this, 'ajax_run_breaker_self_test' ) );
 		add_action( 'wp_ajax_hsm_schedule_cron', array( $this, 'ajax_schedule_cron' ) );
 	}
@@ -499,6 +500,44 @@ class AdminController {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Handle AJAX request to toggle email notifications.
+	 */
+	public function ajax_toggle_email_notifications() {
+		// Verify nonce.
+		check_ajax_referer( 'hsm_toggle_email_notifications', 'nonce' );
+
+		// Check permissions.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Insufficient permissions' ) );
+		}
+
+		// Get and validate enabled state.
+		$enabled = isset( $_POST['enabled'] ) && '1' === $_POST['enabled'] ? '1' : '0';
+
+		// Save option.
+		update_option( \Hypercart_Server_Monitor\Plugin::OPTION_EMAIL_NOTIFICATIONS_ENABLED, $enabled );
+
+		// Log the change.
+		\Hypercart_Logger::info(
+			'hypercart-server-monitor',
+			'Email notifications toggled',
+			array(
+				'enabled' => $enabled,
+				'user'    => wp_get_current_user()->user_login,
+			)
+		);
+
+		wp_send_json_success(
+			array(
+				'message' => $enabled === '1'
+					? __( 'Email notifications enabled', 'hypercart-server-monitor' )
+					: __( 'Email notifications disabled', 'hypercart-server-monitor' ),
+				'enabled' => $enabled,
+			)
+		);
 	}
 
 	/**

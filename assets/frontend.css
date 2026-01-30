@@ -590,3 +590,135 @@
 
 	/* On mobile, the native title attribute will show instead */
 }
+
+/* ============================================
+   Pagination Styles
+   ============================================ */
+
+.hsm-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 20px 24px;
+	border-top: 1px solid #e2e8f0;
+	background: #f8fafc;
+	border-radius: 0 0 12px 12px;
+	flex-wrap: wrap;
+	gap: 16px;
+}
+
+.hsm-pagination-info {
+	color: #64748b;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.hsm-pagination-controls {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.hsm-pagination-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 36px;
+	height: 36px;
+	padding: 0 12px;
+	background: #ffffff;
+	border: 1px solid #cbd5e1;
+	border-radius: 6px;
+	color: #475569;
+	font-size: 14px;
+	font-weight: 500;
+	text-decoration: none;
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.hsm-pagination-button:hover {
+	background: #f1f5f9;
+	border-color: #94a3b8;
+	color: #1e293b;
+}
+
+.hsm-pagination-button:active {
+	transform: scale(0.95);
+}
+
+.hsm-pagination-button.hsm-pagination-current {
+	background: #3b82f6;
+	border-color: #3b82f6;
+	color: #ffffff;
+	cursor: default;
+	font-weight: 600;
+}
+
+.hsm-pagination-button.hsm-pagination-current:hover {
+	background: #3b82f6;
+	border-color: #3b82f6;
+	color: #ffffff;
+}
+
+.hsm-pagination-button.hsm-pagination-disabled {
+	background: #f8fafc;
+	border-color: #e2e8f0;
+	color: #cbd5e1;
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.hsm-pagination-button.hsm-pagination-disabled:hover {
+	background: #f8fafc;
+	border-color: #e2e8f0;
+	color: #cbd5e1;
+	transform: none;
+}
+
+.hsm-pagination-ellipsis {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 36px;
+	height: 36px;
+	color: #94a3b8;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.hsm-pagination-button .screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
+}
+
+/* Responsive pagination */
+@media (max-width: 640px) {
+	.hsm-pagination {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.hsm-pagination-info {
+		text-align: center;
+	}
+
+	.hsm-pagination-controls {
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.hsm-pagination-button {
+		min-width: 32px;
+		height: 32px;
+		padding: 0 8px;
+		font-size: 13px;
+	}
+}
