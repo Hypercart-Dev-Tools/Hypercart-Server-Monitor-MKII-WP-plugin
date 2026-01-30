@@ -347,47 +347,44 @@ class FsmStateStore {
 				// Step 1: Trip breaker.
 				$data['failure_count'] = max( $data['failure_count'], self::FAILURE_THRESHOLD );
 				$this->trip_locked( $data, 'Self test trip', 'self_test' );
-				// After trip_locked, update local snapshot to reflect the new state.
-				$data['state']          = 'open';
-				$data['cooldown_until'] = $now + self::COOLDOWN_SECONDS;
 				$steps[] = array(
 					'step'   => __( 'Trip breaker', 'hypercart-server-monitor' ),
 					'status' => 'ok',
 				);
 
 				// Step 2: Enter half-open (probe allowed).
+				$data = $this->get_state_data();
 				$data['cooldown_until'] = $now - 1;
 				$this->update_state_data_locked( $data );
+				$data = $this->get_state_data();
 				$this->update_state_locked( $data, 'half_open', array( 'cooldown_until' => null ) );
-				$data['state']          = 'half_open';
-				$data['cooldown_until'] = null;
 				$steps[] = array(
 					'step'   => __( 'Enter half-open (probe allowed)', 'hypercart-server-monitor' ),
 					'status' => 'ok',
 				);
 
 				// Step 3: Probe failure re-trips.
+				$data = $this->get_state_data();
 				$data['failure_count'] = max( $data['failure_count'] + 1, self::FAILURE_THRESHOLD );
 				$this->trip_locked( $data, 'Self test probe failure', 'probe_failure' );
-				$data['state']          = 'open';
-				$data['cooldown_until'] = $now + self::COOLDOWN_SECONDS;
 				$steps[] = array(
 					'step'   => __( 'Probe failure re-trips', 'hypercart-server-monitor' ),
 					'status' => 'ok',
 				);
 
 				// Step 4: Cooldown expiry allows probe.
+				$data = $this->get_state_data();
 				$data['cooldown_until'] = $now - 1;
 				$this->update_state_data_locked( $data );
+				$data = $this->get_state_data();
 				$this->update_state_locked( $data, 'half_open', array( 'cooldown_until' => null ) );
-				$data['state']          = 'half_open';
-				$data['cooldown_until'] = null;
 				$steps[] = array(
 					'step'   => __( 'Cooldown expiry allows probe', 'hypercart-server-monitor' ),
 					'status' => 'ok',
 				);
 
 				// Step 5: Probe success closes breaker.
+				$data = $this->get_state_data();
 				$this->update_state_locked(
 					$data,
 					'idle',

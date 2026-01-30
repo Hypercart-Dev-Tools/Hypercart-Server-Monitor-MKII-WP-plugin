@@ -13,10 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improves robustness and user feedback per AGNETS.md guidelines.
   - **Files Modified**: `assets/admin.js`
 
-- **Optimized FSM State Reads**: Refactored `run_breaker_self_test()` to reuse a single in-memory state snapshot within the lock.
-  - Reduced redundant `get_option()` calls from 5 to 1 per self-test execution.
-  - Maintains local state updates after each transition instead of re-reading from database.
-  - Improves performance and aligns with AGNETS.md "minimize DB calls" guidance.
+- **Optimized FSM State Reads**: Refactored `run_breaker_self_test()` to reduce redundant database reads.
+  - Reduced redundant `get_option()` calls from 7 to 5 per self-test execution.
+  - Re-reads state from database after each state-changing operation to ensure correctness.
+  - Improves performance while maintaining state integrity and aligns with AGNETS.md "minimize DB calls" guidance.
   - **Files Modified**: `src/Domain/FsmStateStore.php`
 
 ### Changed
