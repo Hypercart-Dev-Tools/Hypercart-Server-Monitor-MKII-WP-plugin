@@ -22,6 +22,11 @@ class Plugin {
 	const TRANSIENT_CRON_HEALTH = 'hypercart_server_monitor_cron_health_check';
 
 	/**
+	 * Option key for email notifications enabled/disabled.
+	 */
+	const OPTION_EMAIL_NOTIFICATIONS_ENABLED = 'hypercart_server_monitor_email_notifications_enabled';
+
+	/**
 	 * Plugin instance.
 	 *
 	 * @var Plugin|null
@@ -339,10 +344,14 @@ class Plugin {
 	 * Run monitoring task (called by cron).
 	 */
 	public function run_monitoring() {
+		// Check if email notifications are enabled (default: true).
+		$email_enabled = get_option( self::OPTION_EMAIL_NOTIFICATIONS_ENABLED, '1' );
+		$send_email    = '1' === $email_enabled;
+
 		// Safeguard: keep breaker gating centralized via the FSM store.
 		$this->run_monitoring_internal(
 			array(
-				'send_email'             => true,
+				'send_email'             => $send_email,
 				'respect_circuit_breaker'=> true,
 				'track_failures'         => true,
 				'allow_probe'            => true,

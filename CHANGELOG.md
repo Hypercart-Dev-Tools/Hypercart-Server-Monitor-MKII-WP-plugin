@@ -5,6 +5,58 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.17] - 2026-01-30
+
+### Added
+- **Email Notifications Toggle**: Added checkbox switch to enable/disable automatic email notifications.
+  - Modern toggle switch in Email tab with visual on/off state (enabled/disabled).
+  - Setting saved via AJAX with nonce verification for security.
+  - Default state: Enabled (maintains backward compatibility).
+  - Real-time feedback with success/error messages displayed below toggle.
+  - Monitoring flow checks setting before sending emails (respects user preference).
+  - Option stored in WordPress options table: `hypercart_server_monitor_email_notifications_enabled`.
+  - **Files Modified**: `src/Plugin.php`, `src/Admin/views/tab-email.php`, `src/Admin/AdminController.php`, `assets/admin.js`, `hypercart-server-monitor.php`
+
+### Changed
+- **Email Tab Description**: Updated from "Email notifications are sent automatically every 15 minutes after each benchmark run" to "Configure automatic email notifications sent after each benchmark run."
+- **Monitoring Flow**: `run_monitoring()` method now checks email notifications setting before sending emails (line 348 in Plugin.php).
+
+### Technical Details
+- **AJAX Handler**: New `ajax_toggle_email_notifications()` method in AdminController with proper nonce verification and capability checks.
+- **JavaScript**: Toggle switch handler in `assets/admin.js` with visual feedback, error handling, and automatic state reversion on failure.
+- **CSS**: Modern toggle switch styling with smooth transitions, disabled states, and WordPress admin color scheme integration.
+- **Security**: Nonce verification (`hsm_toggle_email_notifications`), capability check (`manage_options`), input sanitization (strict '1'/'0' validation).
+- **Logging**: All toggle changes logged with user information for audit trail.
+- **Default Behavior**: If option doesn't exist, defaults to '1' (enabled) to maintain backward compatibility with existing installations.
+
+## [0.4.16] - 2026-01-30
+
+### Added
+- **Pagination Controls for Frontend Dashboard**: Implemented performant, secure pagination for the Recent Samples table.
+  - URL-based pagination using `hsm_page` query parameter for better SEO and browser history support.
+  - Shows 10 samples per page with intelligent page number display (ellipsis for large page counts).
+  - Displays "Showing X-Y of Z samples" information for user clarity.
+  - First/Previous/Next/Last navigation buttons with proper disabled states.
+  - Smart page number display: shows all pages if 7 or fewer, otherwise shows first, last, current, and 2 pages on each side of current.
+  - Input sanitization: page number is validated and clamped to valid range (1 to total_pages).
+  - Modern, accessible design matching the existing slate color palette with blue accent for current page.
+  - Fully responsive with mobile-optimized layout and touch-friendly button sizes.
+  - Screen reader support with ARIA labels (`aria-current`, `aria-disabled`) and semantic HTML.
+  - Smooth hover effects and active states for better UX.
+  - **Files Modified**: `src/Frontend/views/shortcode-dashboard.php`, `assets/frontend.css`
+
+### Changed
+- **Frontend Dashboard Description**: Updated Recent Samples card description to show current page info (e.g., "Page 1 of 5 (48 total samples)").
+- **Table ID**: Added `id="hsm-samples-table"` to the samples table for potential future JavaScript enhancements.
+
+### Technical Details
+- **Performance**: No database queries - pagination operates on in-memory array from JSON file (24h of samples, typically 96 entries).
+- **Security**: Input sanitization using PHP's `(int)` casting and `max()`/`min()` clamping to prevent invalid page numbers.
+- **Accessibility**: Full ARIA support, screen reader text for navigation buttons, semantic navigation structure.
+- **SEO**: URL-based pagination allows search engines to discover and index historical data pages.
+- **Browser Compatibility**: Uses standard HTML/CSS, no JavaScript required for core functionality.
+- **Design System**: Matches existing Tailwind-inspired slate color palette (#f8fafc, #e2e8f0, #cbd5e1, #94a3b8, #64748b, #475569, #1e293b) with blue accent (#3b82f6) for active page.
+
 ## [0.4.15] - 2026-01-28
 
 ### Added

@@ -14,9 +14,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="hsm-email-tab">
 	<div class="hsm-card">
 		<h2><?php esc_html_e( 'Email Notifications', 'hypercart-server-monitor' ); ?></h2>
-		<p><?php esc_html_e( 'Email notifications are sent automatically every 15 minutes after each benchmark run.', 'hypercart-server-monitor' ); ?></p>
-		
-		<table class="widefat">
+		<p><?php esc_html_e( 'Configure automatic email notifications sent after each benchmark run.', 'hypercart-server-monitor' ); ?></p>
+
+		<?php
+		// Get current email notifications setting (default: enabled).
+		$email_enabled = get_option( \Hypercart_Server_Monitor\Plugin::OPTION_EMAIL_NOTIFICATIONS_ENABLED, '1' );
+		$is_enabled    = '1' === $email_enabled;
+		?>
+
+		<!-- Email Notifications Toggle -->
+		<div class="hsm-email-toggle-section">
+			<div class="hsm-email-toggle-row">
+				<div class="hsm-email-toggle-label">
+					<strong><?php esc_html_e( 'Enable Email Notifications', 'hypercart-server-monitor' ); ?></strong>
+					<p class="description">
+						<?php esc_html_e( 'Automatically send email alerts after each benchmark run (every 15 minutes).', 'hypercart-server-monitor' ); ?>
+					</p>
+				</div>
+				<div class="hsm-email-toggle-control">
+					<label class="hsm-toggle-switch">
+						<input type="checkbox"
+						       id="hsm-email-notifications-toggle"
+						       <?php checked( $is_enabled ); ?>
+						       data-nonce="<?php echo esc_attr( wp_create_nonce( 'hsm_toggle_email_notifications' ) ); ?>">
+						<span class="hsm-toggle-slider"></span>
+					</label>
+					<span class="hsm-toggle-status" id="hsm-email-toggle-status">
+						<?php echo $is_enabled ? esc_html__( 'Enabled', 'hypercart-server-monitor' ) : esc_html__( 'Disabled', 'hypercart-server-monitor' ); ?>
+					</span>
+				</div>
+			</div>
+			<div id="hsm-email-toggle-feedback" class="hsm-toggle-feedback" style="display: none;"></div>
+		</div>
+
+		<table class="widefat" style="margin-top: 20px;">
 			<tbody>
 				<tr>
 					<th><?php esc_html_e( 'Recipient', 'hypercart-server-monitor' ); ?></th>
@@ -146,6 +177,129 @@ jQuery(document).ready(function($) {
 
 .hsm-email-tab .notice {
 	margin-top: 15px;
+}
+
+/* Email Toggle Section */
+.hsm-email-toggle-section {
+	background: #f9f9f9;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 20px;
+	margin-bottom: 20px;
+}
+
+.hsm-email-toggle-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 20px;
+}
+
+.hsm-email-toggle-label {
+	flex: 1;
+}
+
+.hsm-email-toggle-label strong {
+	font-size: 14px;
+	color: #23282d;
+}
+
+.hsm-email-toggle-label .description {
+	margin: 5px 0 0 0;
+	color: #646970;
+}
+
+.hsm-email-toggle-control {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+/* Toggle Switch */
+.hsm-toggle-switch {
+	position: relative;
+	display: inline-block;
+	width: 50px;
+	height: 26px;
+	margin: 0;
+}
+
+.hsm-toggle-switch input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.hsm-toggle-slider {
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #ccc;
+	transition: 0.3s;
+	border-radius: 26px;
+}
+
+.hsm-toggle-slider:before {
+	position: absolute;
+	content: "";
+	height: 20px;
+	width: 20px;
+	left: 3px;
+	bottom: 3px;
+	background-color: white;
+	transition: 0.3s;
+	border-radius: 50%;
+}
+
+input:checked + .hsm-toggle-slider {
+	background-color: #2271b1;
+}
+
+input:focus + .hsm-toggle-slider {
+	box-shadow: 0 0 1px #2271b1;
+}
+
+input:checked + .hsm-toggle-slider:before {
+	transform: translateX(24px);
+}
+
+input:disabled + .hsm-toggle-slider {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.hsm-toggle-status {
+	font-weight: 600;
+	color: #646970;
+	min-width: 70px;
+}
+
+.hsm-toggle-feedback {
+	margin-top: 15px;
+	padding: 10px 15px;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.hsm-toggle-feedback.success {
+	background: #d7f0d7;
+	border: 1px solid #00a32a;
+	color: #00a32a;
+}
+
+.hsm-toggle-feedback.error {
+	background: #f9e2e2;
+	border: 1px solid #d63638;
+	color: #d63638;
+}
+
+.hsm-toggle-feedback .dashicons {
+	font-size: 18px;
 }
 </style>
 
