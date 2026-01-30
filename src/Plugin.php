@@ -450,11 +450,23 @@ class Plugin {
 
 			// Transition to scheduled state (cron only).
 			if ( $options['use_scheduled_state'] ) {
-				$this->state_store->transition_to( 'scheduled' );
+				if ( ! $this->state_store->transition_to( 'scheduled' ) ) {
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Failed to transition to scheduled state (lock not acquired)',
+						array()
+					);
+				}
 			}
 
 			// Transition to running state.
-			$this->state_store->transition_to( 'running' );
+			if ( ! $this->state_store->transition_to( 'running' ) ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Failed to transition to running state (lock not acquired)',
+					array()
+				);
+			}
 
 			// Collect metrics.
 			$raw_metrics = $this->collect_metrics();
@@ -464,7 +476,13 @@ class Plugin {
 			$score  = $scorer->calculate_score( $raw_metrics, true );
 
 			// Transition to writing state.
-			$this->state_store->transition_to( 'writing' );
+			if ( ! $this->state_store->transition_to( 'writing' ) ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Failed to transition to writing state (lock not acquired)',
+					array()
+				);
+			}
 
 			// Snapshot cron health at the end of this run for historical display.
 			$override_last_run   = ! empty( $options['use_scheduled_state'] ) ? $start_time : null;
@@ -496,7 +514,13 @@ class Plugin {
 
 			if ( $options['send_email'] ) {
 				// Transition to emailing state.
-				$this->state_store->transition_to( 'emailing' );
+				if ( ! $this->state_store->transition_to( 'emailing' ) ) {
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Failed to transition to emailing state (lock not acquired)',
+						array()
+					);
+				}
 
 				// Send email notification.
 				$email_service = new Services\EmailService();
@@ -513,13 +537,19 @@ class Plugin {
 
 			// Transition to completed state.
 			$duration_ms = ( \Hypercart_Time::now() - $start_time ) * 1000;
-			$this->state_store->transition_to(
+			if ( ! $this->state_store->transition_to(
 				'completed',
 				array(
 					'last_run_utc'     => $start_time,
 					'last_duration_ms' => $duration_ms,
 				)
-			);
+			) ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Failed to transition to completed state (lock not acquired)',
+					array()
+				);
+			}
 
 			// Reset failure counter on success.
 			if ( $probe_run ) {
@@ -550,14 +580,41 @@ class Plugin {
 		} catch ( \Exception $e ) {
 			// Record error.
 			if ( $probe_run ) {
-				$this->state_store->record_probe_failure( $e->getMessage() );
+				$probe_result = $this->state_store->record_probe_failure( $e->getMessage() );
+				// If lock failed, fall back to error state transition.
+				if ( false === $probe_result ) {
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Failed to record probe failure (lock not acquired), falling back to error state',
+						array()
+					);
+					if ( ! $this->state_store->transition_to( 'error' ) ) {
+						\Hypercart_Logger::warning(
+							'hypercart-server-monitor',
+							'Failed to transition to error state (lock not acquired)',
+							array()
+						);
+					}
+				}
 			} elseif ( $options['track_failures'] ) {
 				$error_result = $this->state_store->record_error( $e->getMessage() );
 				if ( ! is_array( $error_result ) || empty( $error_result['tripped'] ) ) {
-					$this->state_store->transition_to( 'error' );
+					if ( ! $this->state_store->transition_to( 'error' ) ) {
+						\Hypercart_Logger::warning(
+							'hypercart-server-monitor',
+							'Failed to transition to error state (lock not acquired)',
+							array()
+						);
+					}
 				}
 			} else {
-				$this->state_store->transition_to( 'error' );
+				if ( ! $this->state_store->transition_to( 'error' ) ) {
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Failed to transition to error state (lock not acquired)',
+						array()
+					);
+				}
 			}
 
 			\Hypercart_Logger::error(

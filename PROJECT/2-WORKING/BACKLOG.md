@@ -1,3 +1,25 @@
+2026-01-30
+==========
+
+- [x] State transitions can silently fail: transition_to() returns false when the state lock can’t be acquired, but callers in the main run flow don’t check the return value. That means the run can proceed while state stays stale. Plugin.php
+
+Severity: Medium
+**Status**: Fixed in v0.4.19 - Added return value checks and logging for all transition_to() calls
+
+- [x] Probe error path ignores lock failure: record_probe_failure() can return false (lock not acquired), but the exception path doesn’t fall back to transition_to('error'). If the lock is stuck, you can lose the failure/trip record entirely. Plugin.php and FsmStateStore.php
+
+Severity: Medium
+**Status**: Fixed in v0.4.19 - Added fallback to transition_to('error') when record_probe_failure() returns false
+
+- [ ] record_probe_success() doesn’t change state: it only clears counters. In current usage it’s called after transition_to('completed'), so you’re fine, but it’s easy to misuse later and leave state as tripped/half_open with cleared counters. FsmStateStore.php
+
+Severity: Low
+
+- [ ] run_breaker_self_test() restores via update_option() directly (no validation/logs/updated_utc). It’s under lock so probably fine, but it bypasses the normal transition path. FsmStateStore.php
+
+Severity: Low
+
+
 2026-01-27
 ==========
 

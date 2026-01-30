@@ -5,6 +5,21 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.19] - 2026-01-30
+
+### Fixed
+- **State Transition Lock Failure Handling**: Added return value checks for all `transition_to()` calls in the main run flow.
+  - Previously, state transitions could silently fail when the state lock couldn't be acquired, causing the run to proceed with stale state.
+  - Now logs warnings when state transitions fail due to lock acquisition failures.
+  - Improves observability and debugging of state synchronization issues.
+  - **Files Modified**: `src/Plugin.php`
+
+- **Probe Failure Lock Failure Handling**: Added fallback error handling when `record_probe_failure()` fails to acquire lock.
+  - Previously, if the lock was stuck during a probe failure, the failure/trip record could be lost entirely.
+  - Now falls back to `transition_to('error')` when `record_probe_failure()` returns false.
+  - Ensures circuit breaker failures are always recorded even if lock acquisition fails.
+  - **Files Modified**: `src/Plugin.php`
+
 ## [0.4.18] - 2026-01-30
 
 ### Performance

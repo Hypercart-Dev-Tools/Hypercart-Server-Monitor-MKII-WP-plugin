@@ -3,7 +3,7 @@
  * Plugin Name: Hypercart Server Monitor MKII
  * Plugin URI: https://github.com/yourusername/wp-server-performance-monitor
  * Description: Monitors server health (CPU, Memory, Disk) every 15 minutes with email alerts and admin dashboard. Requires Hypercart Helper.
-	 * Version: 0.4.18
+	 * Version: 0.4.19
  * Author: Your Name
  * Author URI: https://hypercart.io
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ exit;
 }
 
 // Define plugin constants.
-	define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.4.18' );
+	define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.4.19' );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_FILE', __FILE__ );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
