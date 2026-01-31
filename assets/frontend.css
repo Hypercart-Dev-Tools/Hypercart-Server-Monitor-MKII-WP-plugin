@@ -534,9 +534,9 @@
 .hsm-has-tooltip::before {
 	content: attr(data-hsm-local);
 	position: absolute;
-	bottom: 100%;
+	top: 100%;
 	left: 50%;
-	transform: translateX(-50%) translateY(-8px);
+	transform: translateX(-50%) translateY(8px);
 	background-color: #1e293b;
 	color: #f8fafc;
 	padding: 0.5rem 0.75rem;
@@ -554,11 +554,11 @@
 .hsm-has-tooltip::after {
 	content: '';
 	position: absolute;
-	bottom: 100%;
+	top: 100%;
 	left: 50%;
-	transform: translateX(-50%) translateY(-2px);
+	transform: translateX(-50%) translateY(2px);
 	border: 5px solid transparent;
-	border-top-color: #1e293b;
+	border-bottom-color: #1e293b;
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 0.2s, transform 0.2s;
@@ -568,7 +568,7 @@
 .hsm-has-tooltip:hover::before,
 .hsm-has-tooltip:hover::after {
 	opacity: 1;
-	transform: translateX(-50%) translateY(-4px);
+	transform: translateX(-50%) translateY(4px);
 }
 
 /* Add timezone label to tooltip */

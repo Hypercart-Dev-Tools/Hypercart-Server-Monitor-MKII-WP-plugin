@@ -158,6 +158,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<div class="hsm-metric-item">
 							<div class="hsm-metric-label">
 								<p class="hsm-metric-name"><?php esc_html_e( 'Fastest Run', 'hypercart-server-monitor' ); ?></p>
+								<p class="hsm-metric-hint"><?php esc_html_e( '(last 24 hrs)', 'hypercart-server-monitor' ); ?></p>
 							</div>
 							<div class="hsm-metric-value medium fastest">
 								<?php echo esc_html( number_format( $benchmark_min, 2 ) ); ?> ms
@@ -167,6 +168,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<div class="hsm-metric-item">
 							<div class="hsm-metric-label">
 								<p class="hsm-metric-name"><?php esc_html_e( 'Slowest Run', 'hypercart-server-monitor' ); ?></p>
+								<p class="hsm-metric-hint"><?php esc_html_e( '(last 24 hrs)', 'hypercart-server-monitor' ); ?></p>
 							</div>
 							<div class="hsm-metric-value medium slowest">
 								<?php echo esc_html( number_format( $benchmark_max, 2 ) ); ?> ms

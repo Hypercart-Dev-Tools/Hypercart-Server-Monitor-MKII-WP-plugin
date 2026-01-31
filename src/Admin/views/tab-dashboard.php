@@ -81,11 +81,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<td><?php echo esc_html( number_format( $raw_metrics['benchmark']['avg_time_ms'] ?? 0, 2 ) ); ?> ms</td>
 					</tr>
 					<tr>
-						<td><?php esc_html_e( 'Fastest Run', 'hypercart-server-monitor' ); ?></td>
+						<td><?php esc_html_e( 'Fastest Run', 'hypercart-server-monitor' ); ?> <span style="color: #666; font-size: 0.9em;"><?php esc_html_e( '(last 24 hrs)', 'hypercart-server-monitor' ); ?></span></td>
 						<td><?php echo esc_html( number_format( $raw_metrics['benchmark']['min_time_ms'] ?? 0, 2 ) ); ?> ms</td>
 					</tr>
 					<tr>
-						<td><?php esc_html_e( 'Slowest Run', 'hypercart-server-monitor' ); ?></td>
+						<td><?php esc_html_e( 'Slowest Run', 'hypercart-server-monitor' ); ?> <span style="color: #666; font-size: 0.9em;"><?php esc_html_e( '(last 24 hrs)', 'hypercart-server-monitor' ); ?></span></td>
 						<td><?php echo esc_html( number_format( $raw_metrics['benchmark']['max_time_ms'] ?? 0, 2 ) ); ?> ms</td>
 					</tr>
 					<tr>

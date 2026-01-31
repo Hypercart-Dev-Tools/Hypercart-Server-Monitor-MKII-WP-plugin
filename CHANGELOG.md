@@ -5,6 +5,22 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.20] - 2026-01-31
+
+### Fixed
+- **Tooltip Cutoff Issue**: Fixed timestamp tooltips in Recent Samples table getting cut off at the top of the viewport.
+  - Changed tooltip positioning from `bottom: 100%` to `top: 100%` to display tooltips below the timestamp instead of above.
+  - Updated arrow direction from `border-top-color` to `border-bottom-color` to match new positioning.
+  - Prevents tooltips from being cut off when table is near the top of the screen.
+  - **Files Modified**: `assets/frontend.css`
+
+### Changed
+- **Benchmark Metric Period Labels**: Added "(last 24 hrs)" labels to "Fastest Run" and "Slowest Run" metrics.
+  - Clarifies that these metrics represent data from the last 24 hours, not all-time records.
+  - Applied to both frontend shortcode dashboard and admin dashboard views.
+  - Improves user understanding of metric scope and data retention period.
+  - **Files Modified**: `src/Frontend/views/shortcode-dashboard.php`, `src/Admin/views/tab-dashboard.php`
+
 ## [0.4.19] - 2026-01-30
 
 ### Fixed
