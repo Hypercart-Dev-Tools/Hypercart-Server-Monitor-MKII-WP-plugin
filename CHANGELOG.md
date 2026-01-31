@@ -5,6 +5,17 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.25] - 2026-01-31
+
+### Changed
+- **Unified Table CSS**: Created `shared.css` with single source of truth for table styles.
+  - All tables now use 14px font and #000 (pure black) text for consistency.
+  - CSS variables for status colors (excellent/good/warning/critical).
+  - Removed ~160 lines of duplicated CSS between admin and frontend.
+  - Added LLM guidance comments to prevent future CSS complexity creep.
+  - **Files Created**: `assets/shared.css`
+  - **Files Modified**: `assets/admin.css`, `assets/frontend.css`, `src/Admin/AdminController.php`, `src/Plugin.php`
+
 ## [0.4.24] - 2026-01-31
 
 ### Changed

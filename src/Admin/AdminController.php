@@ -106,11 +106,19 @@ class AdminController {
 			\Hypercart_Charts::enqueue( array( 'context' => 'hypercart-server-monitor-admin' ) );
 		}
 
-		// Enqueue custom admin styles.
+		// Enqueue shared styles (used by both admin and frontend).
+		wp_enqueue_style(
+			'hypercart-server-monitor-shared',
+			plugins_url( 'assets/shared.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			array(),
+			HYPERCART_SERVER_MONITOR_VERSION
+		);
+
+		// Enqueue custom admin styles (depends on shared).
 		wp_enqueue_style(
 			'hypercart-server-monitor-admin',
 			plugins_url( 'assets/admin.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
-			array(),
+			array( 'hypercart-server-monitor-shared' ),
 			HYPERCART_SERVER_MONITOR_VERSION
 		);
 

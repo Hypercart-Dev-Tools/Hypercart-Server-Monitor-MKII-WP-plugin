@@ -328,10 +328,19 @@ class Plugin {
 			\Hypercart_Charts::enqueue( array( 'context' => 'hypercart-server-monitor-frontend' ) );
 		}
 
+		// Enqueue shared styles (used by both admin and frontend).
+		wp_enqueue_style(
+			'hypercart-server-monitor-shared',
+			plugins_url( 'assets/shared.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			array(),
+			HYPERCART_SERVER_MONITOR_VERSION
+		);
+
+		// Enqueue frontend styles (depends on shared).
 		wp_enqueue_style(
 			'hypercart-server-monitor-frontend',
 			plugins_url( 'assets/frontend.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
-			array(),
+			array( 'hypercart-server-monitor-shared' ),
 			HYPERCART_SERVER_MONITOR_VERSION
 		);
 

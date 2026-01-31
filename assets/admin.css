@@ -1,5 +1,19 @@
 /**
  * Admin Styles for Hypercart Server Monitor
+ * Imports shared.css for unified table and status styles
+ *
+ * ============================================================================
+ * LLM GUIDANCE - READ BEFORE MODIFYING
+ * ============================================================================
+ *
+ * DO NOT increase CSS complexity without explicit user approval.
+ * DO NOT add new CSS classes unless specifically requested.
+ * DO NOT duplicate styles - use shared.css for common components.
+ * DO NOT change font sizes - 14px and #000 text are standard.
+ *
+ * Table styles, status colors, and cron health are in shared.css.
+ * Only add admin-specific styles here (WordPress integration, dashicons, etc.)
+ * ============================================================================
  */
 
 /* Card Layout */
@@ -70,24 +84,15 @@
 	color: #383d41;
 }
 
-/* Timestamp */
+/* Timestamp - extends shared.css .hsm-timestamp */
 .hsm-timestamp {
 	text-align: center;
-	color: #000;
-	font-size: 16.8px; /* 14px * 1.2 = 16.8px */
 	margin: 10px 0;
 }
 
-/* Metrics Table */
+/* Metrics Table - uses shared.css .hsm-table */
 .hsm-metrics-table {
 	margin-top: 20px;
-}
-
-.hsm-metrics-table th,
-.hsm-metrics-table td {
-	padding: 12px;
-	font-size: 16.8px; /* 14px * 1.2 = 16.8px */
-	color: #000;
 }
 
 /* Chart Container */
@@ -101,14 +106,9 @@
 	height: 100%;
 }
 
-/* Samples Table */
-.hsm-samples-table table {
+/* Samples Table - uses shared.css .hsm-table */
+.hsm-samples-table {
 	margin-top: 10px;
-}
-
-.hsm-samples-table table td {
-	font-size: 16.8px; /* 14px * 1.2 = 16.8px */
-	color: #000;
 }
 
 /* Manual Test */
@@ -163,20 +163,7 @@
 	height: 16px;
 }
 
-.hsm-status-ok {
-	color: #46b450;
-	font-weight: 500;
-}
-
-.hsm-status-warning {
-	color: #f0b849;
-	font-weight: 500;
-}
-
-.hsm-status-error {
-	color: #dc3232;
-	font-weight: 500;
-}
+/* Status colors defined in shared.css */
 
 /* Logs */
 .hsm-log-selector {
@@ -264,35 +251,4 @@
 	font-family: monospace;
 }
 
-.hsm-status-ok {
-	color: #00a32a;
-	font-weight: 600;
-}
-
-.hsm-status-warning {
-	color: #dba617;
-	font-weight: 600;
-}
-
-.hsm-status-error {
-	color: #d63638;
-	font-weight: 600;
-}
-
-.hsm-cron-health-status {
-	font-weight: 600;
-	font-size: 12px;
-	letter-spacing: 0.02em;
-}
-
-.hsm-cron-health-healthy {
-	color: #00a32a;
-}
-
-.hsm-cron-health-unhealthy {
-	color: #d63638;
-}
-
-.hsm-cron-health-unknown {
-	color: #646970;
-}
+/* Status and cron health colors defined in shared.css */
