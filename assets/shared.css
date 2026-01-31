@@ -151,18 +151,13 @@
 }
 
 /* ===========================================
-   Table Cell Types - Unified
+   Table Cell Types
+   Color/size inherited from .hsm-table td
    =========================================== */
-.hsm-table-timestamp {
+.hsm-table-timestamp,
+.hsm-table-value,
+.hsm-timestamp-value {
 	font-family: 'Courier New', monospace;
-	font-size: 14px;
-	color: var(--hsm-text-primary);
-}
-
-.hsm-table-value {
-	font-family: 'Courier New', monospace;
-	font-size: 14px;
-	color: var(--hsm-text-primary);
 }
 
 .hsm-table-score {
@@ -178,18 +173,4 @@
 	font-size: 12px;
 	font-weight: 500;
 	color: #475569;
-}
-
-/* ===========================================
-   Timestamp Display - Unified
-   =========================================== */
-.hsm-timestamp {
-	font-size: 14px;
-	color: var(--hsm-text-primary);
-}
-
-.hsm-timestamp-value {
-	font-family: 'Courier New', monospace;
-	font-size: 14px;
-	color: var(--hsm-text-primary);
 }
