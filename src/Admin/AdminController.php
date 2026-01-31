@@ -396,6 +396,16 @@ class AdminController {
 				$warnings[] = __( 'Benchmark not supported on this system', 'hypercart-server-monitor' );
 			}
 
+			// Get current cron health status for display.
+			$plugin             = \Hypercart_Server_Monitor\Plugin::get_instance();
+			$cron_health_state  = $plugin->determine_cron_health_state();
+			$cron_health_status = array(
+				'status'            => $cron_health_state['status'],
+				'last_run_utc'      => $cron_health_state['last_run'] ? gmdate( 'c', $cron_health_state['last_run'] ) : null,
+				'next_run_utc'      => $cron_health_state['next_run'] ? gmdate( 'c', $cron_health_state['next_run'] ) : null,
+				'transient_present' => (bool) $cron_health_state['transient_present'],
+			);
+
 			wp_send_json_success(
 				array(
 					'score'       => $score,
@@ -404,6 +414,7 @@ class AdminController {
 					'timestamp'   => $result['timestamp'] ?? \Hypercart_Time::format( 'Y-m-d H:i:s' ),
 					'warnings'    => $warnings,
 					'logged'      => true,
+					'cron_health' => $cron_health_status,
 				)
 			);
 		} catch ( \Exception $e ) {

@@ -285,6 +285,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<th class="text-right"><?php esc_html_e( 'Benchmark 1', 'hypercart-server-monitor' ); ?></th>
 							<th class="text-right"><?php esc_html_e( 'Benchmark 2', 'hypercart-server-monitor' ); ?></th>
 							<th class="text-right"><?php esc_html_e( 'Benchmark 3', 'hypercart-server-monitor' ); ?></th>
+							<th class="text-right"><?php esc_html_e( 'Total', 'hypercart-server-monitor' ); ?></th>
 							<th><?php esc_html_e( 'Cron Health', 'hypercart-server-monitor' ); ?></th>
 						</tr>
 					</thead>
@@ -298,6 +299,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 							$time_1 = isset( $times[0] ) ? number_format( $times[0], 2 ) : 'N/A';
 							$time_2 = isset( $times[1] ) ? number_format( $times[1], 2 ) : 'N/A';
 							$time_3 = isset( $times[2] ) ? number_format( $times[2], 2 ) : 'N/A';
+
+							// Calculate total time (sum of all 3 runs).
+							$total_time = 'N/A';
+							if ( isset( $times[0], $times[1], $times[2] ) ) {
+								$total_time = number_format( $times[0] + $times[1] + $times[2], 2 );
+							}
 
 							// Cron health snapshot captured at run time (if available).
 							$cron_health_meta   = $sample['meta']['cron_health'] ?? array();
@@ -339,6 +346,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_1 ); ?> ms</td>
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_2 ); ?> ms</td>
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_3 ); ?> ms</td>
+								<td class="hsm-table-value text-right"><?php echo esc_html( $total_time ); ?> ms</td>
 								<td class="hsm-table-cron-health <?php echo esc_attr( $cron_health_class ); ?>"><?php echo esc_html( $cron_health_label ); ?></td>
 							</tr>
 						<?php endforeach; ?>

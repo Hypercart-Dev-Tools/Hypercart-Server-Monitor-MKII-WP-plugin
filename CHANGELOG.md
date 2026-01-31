@@ -5,6 +5,27 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.23] - 2026-01-31
+
+### Added
+- **Total Column in All Tables**: Added "Total (ms)" column to all Recent Samples tables.
+  - Automatically calculates and displays the sum of Run 1 + Run 2 + Run 3 benchmark times.
+  - Positioned before the Cron Health column for easy comparison.
+  - Provides quick visibility into total execution time across all three benchmark runs.
+  - Applied consistently across Manual Test Runner, Dashboard, and Shortcode views.
+  - **Files Modified**: `src/Admin/views/tab-manual-test.php`, `src/Admin/views/tab-dashboard.php`, `src/Frontend/views/shortcode-dashboard.php`
+
+## [0.4.22] - 2026-01-31
+
+### Changed
+- **Unified Manual Test Runner Display**: Manual test results now use the same table format as Dashboard and Shortcode views.
+  - Displays results in a unified table with columns: Timestamp, Score, Label, Run 1 (ms), Run 2 (ms), Run 3 (ms), Cron Health.
+  - Shows single row with current test results instead of separate metric rows.
+  - Added Cron Health status column to manual test results (was previously missing).
+  - Made `Plugin::determine_cron_health_state()` public to allow reuse in admin AJAX handler.
+  - Reduces confusion by maintaining consistent display format across all views.
+  - **Files Modified**: `src/Admin/views/tab-manual-test.php`, `src/Admin/AdminController.php`, `src/Plugin.php`
+
 ## [0.4.21] - 2026-01-31
 
 ### Added

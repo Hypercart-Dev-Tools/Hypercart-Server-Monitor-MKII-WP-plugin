@@ -223,7 +223,7 @@ class Plugin {
 	 * @param int|null $override_last_run Optional last run timestamp override.
 	 * @return array{status:string,last_run:?int,next_run:?int,transient_present:bool}
 	 */
-	private function determine_cron_health_state( $override_last_run = null ) {
+	public function determine_cron_health_state( $override_last_run = null ) {
 		$last_run = null;
 		if ( is_numeric( $override_last_run ) ) {
 			$last_run = (int) $override_last_run;
