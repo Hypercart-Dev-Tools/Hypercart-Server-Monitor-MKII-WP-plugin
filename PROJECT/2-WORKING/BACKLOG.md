@@ -1,5 +1,14 @@
-2026-01-30
+2026-01-31
 ==========
+
+- [x] Propose test that would slightly test a WP admin function but not too much. Current tests are not exposing WP admin issues.
+
+**Status**: Completed in v0.4.21 - Created lightweight Admin Integration Tests (tests/AdminIntegrationTest.php)
+- Tests admin menu registration, AJAX hooks, capability checks, and asset enqueuing
+- Safe to run via WP-CLI: `wp eval-file tests/run-admin-test.php`
+- No benchmarks, no data modification, < 1 second execution time
+
+
 
 - [x] 1. State transitions can silently fail: transition_to() returns false when the state lock can’t be acquired, but callers in the main run flow don’t check the return value. That means the run can proceed while state stays stale. Plugin.php
 

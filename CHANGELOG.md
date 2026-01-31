@@ -5,6 +5,40 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.21] - 2026-01-31
+
+### Added
+- **Admin Integration Tests**: Lightweight smoke tests for WordPress admin functionality.
+  - Tests admin menu registration, AJAX hooks, capability checks, and asset enqueuing.
+  - Safe to run - no benchmarks executed, no data modified, no emails sent.
+  - Quick execution (< 1 second) - only checks WordPress internal state.
+  - Run via WP-CLI: `wp eval-file tests/run-admin-test.php`
+  - Catches common admin issues: missing hooks, broken capability checks, asset loading failures.
+  - **New Files**: `tests/AdminIntegrationTest.php`, `tests/run-admin-test.php`, `tests/README.md`
+
+### Changed
+- **Darkened Benchmark Metric Labels**: Increased contrast of metric labels from medium grey to dark grey.
+  - Changed color from `#334155` (slate-700) to `#1e293b` (slate-800) - approximately 15% darker.
+  - Improves readability and visual prominence of metric labels.
+  - Affects labels: "Benchmark Time (avg)", "Fastest Run", "Slowest Run", "Iterations".
+  - **Files Modified**: `assets/frontend.css`
+
+- **Darkened Table Timestamps**: Increased contrast of timestamp text in Recent Samples table.
+  - Changed color from `#475569` (slate-600) to `#334155` (slate-700) - approximately 15% darker.
+  - Improves readability of UTC timestamps in the table.
+  - **Files Modified**: `assets/frontend.css`
+
+- **Darkened Benchmark Values in Table**: Increased contrast of benchmark timing values (Benchmark 1, 2, 3).
+  - Changed color from `#475569` (slate-600) to `#334155` (slate-700) - approximately 15% darker.
+  - Improves readability of benchmark timing values in Recent Samples table.
+  - **Files Modified**: `assets/frontend.css`
+
+- **Removed Duplicate Page Title**: Removed hardcoded "Server Health 2026" title from shortcode dashboard.
+  - Eliminates duplicate heading when shortcode is used on a WordPress page that already has a page title.
+  - Keeps "Read-only view" badge for context.
+  - Improves visual hierarchy and reduces redundancy.
+  - **Files Modified**: `src/Frontend/views/shortcode-dashboard.php`
+
 ## [0.4.20] - 2026-01-31
 
 ### Fixed
