@@ -5,6 +5,16 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.24] - 2026-01-31
+
+### Changed
+- **Improved Readability for Timestamps and Benchmark Values**: Enhanced visibility of critical data.
+  - Increased font size by 20% for all timestamps and benchmark values (14px → 16.8px in admin, 0.875rem → 1.05rem base table, 0.75rem → 0.9rem for specific cells in frontend).
+  - Changed text color to pure black (#000) for better contrast and readability.
+  - Applied to both admin dashboard and frontend shortcode views.
+  - Affects: base table font size, all table cells, timestamp columns, benchmark time values (Run 1, Run 2, Run 3, Total), and metrics tables.
+  - **Files Modified**: `assets/admin.css`, `assets/frontend.css`
+
 ## [0.4.23] - 2026-01-31
 
 ### Added

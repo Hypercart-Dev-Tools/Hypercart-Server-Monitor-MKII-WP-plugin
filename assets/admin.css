@@ -73,8 +73,8 @@
 /* Timestamp */
 .hsm-timestamp {
 	text-align: center;
-	color: #666;
-	font-size: 14px;
+	color: #000;
+	font-size: 16.8px; /* 14px * 1.2 = 16.8px */
 	margin: 10px 0;
 }
 
@@ -86,6 +86,8 @@
 .hsm-metrics-table th,
 .hsm-metrics-table td {
 	padding: 12px;
+	font-size: 16.8px; /* 14px * 1.2 = 16.8px */
+	color: #000;
 }
 
 /* Chart Container */
@@ -102,6 +104,11 @@
 /* Samples Table */
 .hsm-samples-table table {
 	margin-top: 10px;
+}
+
+.hsm-samples-table table td {
+	font-size: 16.8px; /* 14px * 1.2 = 16.8px */
+	color: #000;
 }
 
 /* Manual Test */
