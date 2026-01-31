@@ -21,10 +21,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<!-- Header -->
 	<div class="hsm-header">
 		<div>
-			<h1 class="hsm-header-title"><?php esc_html_e( 'Server Health 2026', 'hypercart-server-monitor' ); ?></h1>
-			<p class="hsm-header-subtitle"><?php esc_html_e( 'Real-time performance benchmarks and monitoring.', 'hypercart-server-monitor' ); ?></p>
-		</div>
-		<div>
 			<span class="hsm-badge">
 				<span class="hsm-badge-dot"></span>
 				<?php esc_html_e( 'Read-only view', 'hypercart-server-monitor' ); ?>

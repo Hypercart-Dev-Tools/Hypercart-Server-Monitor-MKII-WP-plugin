@@ -294,7 +294,7 @@
 	font-size: 0.875rem;
 	font-weight: 500;
 	line-height: 1;
-	color: #334155;
+	color: #1e293b;
 	margin: 0;
 }
 
@@ -425,7 +425,7 @@
 .hsm-table-timestamp {
 	font-family: 'Courier New', monospace;
 	font-size: 0.75rem;
-	color: #475569;
+	color: #334155;
 }
 
 .hsm-table-score {
@@ -479,7 +479,7 @@
 
 .hsm-table-value {
 	font-family: 'Courier New', monospace;
-	color: #475569;
+	color: #334155;
 }
 
 /* Responsive adjustments */
