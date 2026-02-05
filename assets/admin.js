@@ -12,6 +12,79 @@
 		// Admin is ready.
 		console.log('Hypercart Server Monitor Admin loaded');
 
+		// Live preview update function.
+		function updateLivePreview() {
+			var timestampSize = $('#timestamp_size').val() + 'px';
+			var timestampWeight = $('#timestamp_weight').val();
+			var timestampColor = $('#timestamp_color').val();
+			var benchmarkSize = $('#benchmark_size').val() + 'px';
+			var benchmarkWeight = $('#benchmark_weight').val();
+			var benchmarkColor = $('#benchmark_color').val();
+			var healthSize = $('#health_size').val() + 'px';
+			var healthWeight = $('#health_weight').val();
+			var healthHealthy = $('#health_healthy').val();
+			var healthUnhealthy = $('#health_unhealthy').val();
+
+			// Apply to preview table.
+			$('#hsm-font-preview-table .hsm-table-timestamp').css({
+				'font-size': timestampSize,
+				'font-weight': timestampWeight,
+				'color': timestampColor
+			});
+			$('#hsm-font-preview-table .hsm-table-value').css({
+				'font-size': benchmarkSize,
+				'font-weight': benchmarkWeight,
+				'color': benchmarkColor
+			});
+			$('#hsm-font-preview-table .hsm-cron-health, #hsm-font-preview-table .hsm-table-cron-health').css({
+				'font-size': healthSize,
+				'font-weight': healthWeight
+			});
+			$('#hsm-font-preview-table .hsm-cron-health.healthy, #hsm-font-preview-table .hsm-table-cron-health.healthy').css({
+				'color': healthHealthy
+			});
+			$('#hsm-font-preview-table .hsm-cron-health.unhealthy, #hsm-font-preview-table .hsm-table-cron-health.unhealthy').css({
+				'color': healthUnhealthy
+			});
+		}
+
+		// Initialize color pickers on settings page.
+		if ($('.hsm-color-picker').length) {
+			$('.hsm-color-picker').wpColorPicker({
+				change: function(event, ui) {
+					updateLivePreview();
+				}
+			});
+
+			// Initial preview update on page load
+			setTimeout(function() {
+				updateLivePreview();
+			}, 100);
+		}
+
+		// Update preview on input change.
+		$('#timestamp_size, #timestamp_weight, #benchmark_size, #benchmark_weight, #health_size, #health_weight').on('input change', function() {
+			updateLivePreview();
+		});
+
+		// Reset to defaults button.
+		$('#hsm-reset-font-settings').on('click', function(e) {
+			e.preventDefault();
+			if (confirm('Reset all font settings to defaults?')) {
+				$('#timestamp_size').val('14');
+				$('#timestamp_weight').val('400');
+				$('#timestamp_color').val('#000000').wpColorPicker('color', '#000000');
+				$('#benchmark_size').val('14');
+				$('#benchmark_weight').val('400');
+				$('#benchmark_color').val('#000000').wpColorPicker('color', '#000000');
+				$('#health_size').val('12');
+				$('#health_weight').val('600');
+				$('#health_healthy').val('#059669').wpColorPicker('color', '#059669');
+				$('#health_unhealthy').val('#dc2626').wpColorPicker('color', '#dc2626');
+				updateLivePreview();
+			}
+		});
+
 		// Cron Health Check - Auto-load on page load
 		function checkCronHealth() {
 			var $statusCell = $('#hsm-cron-health-status');

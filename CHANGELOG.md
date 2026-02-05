@@ -5,6 +5,61 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.27] - 2026-01-31
+
+### Fixed
+- **Live Preview Loading Issue**: Fixed live preview requiring 2-3 page reloads to work.
+  - Moved `updateLivePreview()` function declaration before color picker initialization.
+  - Added `setTimeout()` call to trigger initial preview update after color pickers are initialized (100ms delay).
+  - This ensures the preview table is styled correctly on first page load.
+- **Manual Test Runner Font Styling**: Fixed benchmark values and timestamps not inheriting custom font settings.
+  - Added `hsm-table` class to the dynamically generated table.
+  - Added `hsm-table-timestamp` class to timestamp cells.
+  - Added `hsm-table-value` class to all benchmark value cells (Run 1, Run 2, Run 3, Total).
+  - Changed cron health from `hsm-cron-health-status hsm-cron-health-{class}` to `hsm-cron-health {class}` for consistency.
+- **Shortcode Cron Health Color Inheritance**: Fixed cron health status not inheriting custom color settings on frontend.
+  - Changed from `<td class="hsm-table-cron-health">` to `<td><span class="hsm-cron-health">` to match admin structure.
+  - Updated CSS generators in both `AdminController.php` and `Plugin.php` to target both `.hsm-cron-health` and `.hsm-table-cron-health` classes for backward compatibility.
+  - Added both class selectors to JavaScript live preview function.
+
+### Changed
+- **CSS Selectors**: Updated custom font CSS to target both `.hsm-cron-health` and `.hsm-table-cron-health` classes.
+- **JavaScript**: Improved live preview function to handle both class naming conventions.
+- **Files Modified**: `assets/admin.js`, `src/Admin/views/tab-manual-test.php`, `src/Frontend/views/shortcode-dashboard.php`, `src/Admin/AdminController.php`, `src/Plugin.php`
+
+## [0.4.26] - 2026-01-31
+
+### Added
+- **Font Settings Tab**: New admin settings page for customizing table font appearance.
+  - Font size controls (8-32px) for timestamps, benchmarks, and health status.
+  - Font weight selectors (Light 300, Normal 400, Medium 500, Semi-Bold 600, Bold 700).
+  - Color pickers for timestamps, benchmarks, and health status (separate colors for Healthy/Unhealthy states).
+  - Live preview table showing real-time changes before saving.
+  - Reset to defaults button with confirmation dialog.
+  - Settings saved to WordPress options API (`hypercart_server_monitor_font_settings`).
+- **Dynamic CSS Injection**: Custom font settings applied via inline CSS for performance.
+  - Uses `wp_add_inline_style()` to inject custom CSS based on saved settings.
+  - Applied to both admin dashboard and frontend shortcode.
+  - Maintains DRY principles by using shared CSS architecture.
+- **WordPress Color Picker Integration**: Native WordPress color picker (wpColorPicker) for color selection.
+  - Real-time preview updates as colors are selected.
+  - Hex color validation and sanitization.
+
+### Changed
+- **AdminController.php**: Added Settings tab to admin interface, save handler with sanitization, and CSS generator method.
+- **Plugin.php**: Added CSS generator method and inline CSS injection for frontend shortcode.
+- **admin.js**: Added color picker initialization, live preview function, and reset to defaults functionality.
+- **Enqueue Dependencies**: Added `wp-color-picker` style and script dependencies to admin assets.
+
+### Technical Details
+- Settings stored in single option: `hypercart_server_monitor_font_settings`.
+- Sanitization: `sanitize_hex_color()`, `absint()`, `sanitize_text_field()`.
+- Security: Nonce verification (`wp_verify_nonce()`), capability checks (`current_user_can('manage_options')`).
+- Performance: Inline CSS injection (no additional HTTP requests).
+- Maintainability: Single source of truth for font settings, DRY CSS generation method duplicated in AdminController and Plugin classes.
+- **Files Created**: `src/Admin/views/tab-settings.php`
+- **Files Modified**: `src/Admin/AdminController.php`, `src/Plugin.php`, `assets/admin.js`, `hypercart-server-monitor.php`
+
 ## [0.4.25] - 2026-01-31
 
 ### Changed
