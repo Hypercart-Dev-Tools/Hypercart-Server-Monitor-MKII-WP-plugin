@@ -328,12 +328,24 @@ class Plugin {
 			\Hypercart_Charts::enqueue( array( 'context' => 'hypercart-server-monitor-frontend' ) );
 		}
 
+		// Enqueue shared styles (used by both admin and frontend).
 		wp_enqueue_style(
-			'hypercart-server-monitor-frontend',
-			plugins_url( 'assets/frontend.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			'hypercart-server-monitor-shared',
+			plugins_url( 'assets/shared.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
 			array(),
 			HYPERCART_SERVER_MONITOR_VERSION
 		);
+
+		// Enqueue frontend styles (depends on shared).
+		wp_enqueue_style(
+			'hypercart-server-monitor-frontend',
+			plugins_url( 'assets/frontend.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			array( 'hypercart-server-monitor-shared' ),
+			HYPERCART_SERVER_MONITOR_VERSION
+		);
+
+		// Add inline CSS for font customization.
+		wp_add_inline_style( 'hypercart-server-monitor-shared', $this->get_custom_font_css() );
 
 		ob_start();
 		include __DIR__ . '/Frontend/views/shortcode-dashboard.php';
@@ -660,6 +672,58 @@ class Plugin {
 		);
 		array_unshift( $links, $settings_link );
 		return $links;
+	}
+
+	/**
+	 * Generate custom CSS for font settings.
+	 *
+	 * @return string Custom CSS.
+	 */
+	private function get_custom_font_css() {
+		$settings = get_option( 'hypercart_server_monitor_font_settings', array() );
+		$defaults = array(
+			'timestamp_size'   => '14',
+			'timestamp_weight' => '400',
+			'timestamp_color'  => '#000000',
+			'benchmark_size'   => '14',
+			'benchmark_weight' => '400',
+			'benchmark_color'  => '#000000',
+			'health_size'      => '12',
+			'health_weight'    => '600',
+			'health_healthy'   => '#059669',
+			'health_unhealthy' => '#dc2626',
+		);
+		$s        = wp_parse_args( $settings, $defaults );
+
+		$css = "
+		/* Custom Font Settings - Generated from Settings Tab */
+		.hsm-table-timestamp,
+		.hsm-timestamp-value {
+			font-size: {$s['timestamp_size']}px !important;
+			font-weight: {$s['timestamp_weight']} !important;
+			color: {$s['timestamp_color']} !important;
+		}
+		.hsm-table-value {
+			font-size: {$s['benchmark_size']}px !important;
+			font-weight: {$s['benchmark_weight']} !important;
+			color: {$s['benchmark_color']} !important;
+		}
+		.hsm-cron-health,
+		.hsm-table-cron-health {
+			font-size: {$s['health_size']}px !important;
+			font-weight: {$s['health_weight']} !important;
+		}
+		.hsm-cron-health.healthy,
+		.hsm-table-cron-health.healthy {
+			color: {$s['health_healthy']} !important;
+		}
+		.hsm-cron-health.unhealthy,
+		.hsm-table-cron-health.unhealthy {
+			color: {$s['health_unhealthy']} !important;
+		}
+		";
+
+		return $css;
 	}
 
 	/**

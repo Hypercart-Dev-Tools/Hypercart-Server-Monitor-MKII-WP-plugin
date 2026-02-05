@@ -106,19 +106,33 @@ class AdminController {
 			\Hypercart_Charts::enqueue( array( 'context' => 'hypercart-server-monitor-admin' ) );
 		}
 
-		// Enqueue custom admin styles.
+		// Enqueue shared styles (used by both admin and frontend).
 		wp_enqueue_style(
-			'hypercart-server-monitor-admin',
-			plugins_url( 'assets/admin.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			'hypercart-server-monitor-shared',
+			plugins_url( 'assets/shared.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
 			array(),
 			HYPERCART_SERVER_MONITOR_VERSION
 		);
+
+		// Enqueue custom admin styles (depends on shared).
+		wp_enqueue_style(
+			'hypercart-server-monitor-admin',
+			plugins_url( 'assets/admin.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			array( 'hypercart-server-monitor-shared' ),
+			HYPERCART_SERVER_MONITOR_VERSION
+		);
+
+		// Add inline CSS for font customization.
+		wp_add_inline_style( 'hypercart-server-monitor-shared', $this->get_custom_font_css() );
+
+		// Enqueue WordPress color picker.
+		wp_enqueue_style( 'wp-color-picker' );
 
 		// Enqueue custom admin scripts.
 		wp_enqueue_script(
 			'hypercart-server-monitor-admin',
 			plugins_url( 'assets/admin.js', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
-			array( 'jquery' ),
+			array( 'jquery', 'wp-color-picker' ),
 			HYPERCART_SERVER_MONITOR_VERSION,
 			true
 		);
@@ -135,6 +149,58 @@ class AdminController {
 				'debugNonce' => wp_create_nonce( 'hsm_debug' ),
 			)
 		);
+	}
+
+	/**
+	 * Generate custom CSS for font settings.
+	 *
+	 * @return string Custom CSS.
+	 */
+	private function get_custom_font_css() {
+		$settings = get_option( 'hypercart_server_monitor_font_settings', array() );
+		$defaults = array(
+			'timestamp_size'   => '14',
+			'timestamp_weight' => '400',
+			'timestamp_color'  => '#000000',
+			'benchmark_size'   => '14',
+			'benchmark_weight' => '400',
+			'benchmark_color'  => '#000000',
+			'health_size'      => '12',
+			'health_weight'    => '600',
+			'health_healthy'   => '#059669',
+			'health_unhealthy' => '#dc2626',
+		);
+		$s        = wp_parse_args( $settings, $defaults );
+
+		$css = "
+		/* Custom Font Settings - Generated from Settings Tab */
+		.hsm-table-timestamp,
+		.hsm-timestamp-value {
+			font-size: {$s['timestamp_size']}px !important;
+			font-weight: {$s['timestamp_weight']} !important;
+			color: {$s['timestamp_color']} !important;
+		}
+		.hsm-table-value {
+			font-size: {$s['benchmark_size']}px !important;
+			font-weight: {$s['benchmark_weight']} !important;
+			color: {$s['benchmark_color']} !important;
+		}
+		.hsm-cron-health,
+		.hsm-table-cron-health {
+			font-size: {$s['health_size']}px !important;
+			font-weight: {$s['health_weight']} !important;
+		}
+		.hsm-cron-health.healthy,
+		.hsm-table-cron-health.healthy {
+			color: {$s['health_healthy']} !important;
+		}
+		.hsm-cron-health.unhealthy,
+		.hsm-table-cron-health.unhealthy {
+			color: {$s['health_unhealthy']} !important;
+		}
+		";
+
+		return $css;
 	}
 
 	/**
@@ -192,6 +258,13 @@ class AdminController {
 						'icon'            => 'dashicons-admin-tools',
 						'capability'      => 'manage_options',
 						'render_callback' => array( $this, 'render_tab_debug' ),
+					),
+					array(
+						'id'              => 'settings',
+						'label'           => __( 'Settings', 'hypercart-server-monitor' ),
+						'icon'            => 'dashicons-admin-settings',
+						'capability'      => 'manage_options',
+						'render_callback' => array( $this, 'render_tab_settings' ),
 					),
 				),
 			)
@@ -289,6 +362,69 @@ class AdminController {
 		}
 
 		require __DIR__ . '/views/tab-logs.php';
+	}
+
+	/**
+	 * Render Settings tab.
+	 */
+	public function render_tab_settings() {
+		// Handle form submission.
+		if ( isset( $_POST['hsm_font_settings_nonce'] ) && wp_verify_nonce( $_POST['hsm_font_settings_nonce'], 'hsm_save_font_settings' ) ) {
+			$this->save_font_settings();
+		}
+
+		require __DIR__ . '/views/tab-settings.php';
+	}
+
+	/**
+	 * Save font settings.
+	 */
+	private function save_font_settings() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$font_settings = isset( $_POST['font_settings'] ) ? $_POST['font_settings'] : array();
+
+		// Sanitize inputs.
+		$sanitized = array(
+			'timestamp_size'   => absint( $font_settings['timestamp_size'] ?? 14 ),
+			'timestamp_weight' => sanitize_text_field( $font_settings['timestamp_weight'] ?? '400' ),
+			'timestamp_color'  => sanitize_hex_color( $font_settings['timestamp_color'] ?? '#000000' ),
+			'benchmark_size'   => absint( $font_settings['benchmark_size'] ?? 14 ),
+			'benchmark_weight' => sanitize_text_field( $font_settings['benchmark_weight'] ?? '400' ),
+			'benchmark_color'  => sanitize_hex_color( $font_settings['benchmark_color'] ?? '#000000' ),
+			'health_size'      => absint( $font_settings['health_size'] ?? 12 ),
+			'health_weight'    => sanitize_text_field( $font_settings['health_weight'] ?? '600' ),
+			'health_healthy'   => sanitize_hex_color( $font_settings['health_healthy'] ?? '#059669' ),
+			'health_unhealthy' => sanitize_hex_color( $font_settings['health_unhealthy'] ?? '#dc2626' ),
+		);
+
+		// Validate ranges.
+		$sanitized['timestamp_size'] = max( 8, min( 32, $sanitized['timestamp_size'] ) );
+		$sanitized['benchmark_size'] = max( 8, min( 32, $sanitized['benchmark_size'] ) );
+		$sanitized['health_size']    = max( 8, min( 32, $sanitized['health_size'] ) );
+
+		// Save to database.
+		update_option( 'hypercart_server_monitor_font_settings', $sanitized );
+
+		// Log the change.
+		\Hypercart_Logger::info(
+			'hypercart-server-monitor',
+			'Font settings updated',
+			array(
+				'user'     => wp_get_current_user()->user_login,
+				'settings' => $sanitized,
+			)
+		);
+
+		// Show success message.
+		add_settings_error(
+			'hypercart_server_monitor_font_settings',
+			'settings_updated',
+			__( 'Font settings saved successfully.', 'hypercart-server-monitor' ),
+			'success'
+		);
 	}
 
 	/**

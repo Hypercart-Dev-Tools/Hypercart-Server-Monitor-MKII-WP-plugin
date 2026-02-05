@@ -1,0 +1,176 @@
+/**
+ * Shared Styles for Hypercart Server Monitor
+ * Used by both WP Admin and Frontend Shortcode
+ *
+ * ============================================================================
+ * LLM GUIDANCE - READ BEFORE MODIFYING
+ * ============================================================================
+ *
+ * DO NOT increase CSS complexity without explicit user approval.
+ * DO NOT add new CSS classes unless specifically requested.
+ * DO NOT duplicate styles - check if a shared class already exists.
+ * DO NOT use different font sizes for admin vs frontend - keep them unified.
+ *
+ * Design principles:
+ * - 14px base font size for all table content
+ * - #000 (pure black) text for maximum legibility
+ * - Simple, flat selectors (avoid deep nesting)
+ * - CSS variables for colors to enable easy theming
+ *
+ * If you need to add styles, add them here in shared.css first.
+ * Only add to admin.css or frontend.css for truly context-specific styles.
+ * ============================================================================
+ */
+
+/* ===========================================
+   CSS Variables - Single Source of Truth
+   =========================================== */
+:root {
+	/* Status Colors */
+	--hsm-color-excellent: #059669;
+	--hsm-color-good: #0284c7;
+	--hsm-color-warning: #d97706;
+	--hsm-color-critical: #dc2626;
+	--hsm-color-unknown: #64748b;
+
+	/* Status Backgrounds */
+	--hsm-bg-excellent: #d1fae5;
+	--hsm-bg-good: #dbeafe;
+	--hsm-bg-warning: #fef3c7;
+	--hsm-bg-critical: #fee2e2;
+	--hsm-bg-unknown: #e2e3e5;
+
+	/* Text Colors */
+	--hsm-text-primary: #000;
+	--hsm-text-secondary: #64748b;
+	--hsm-text-muted: #94a3b8;
+
+	/* Borders */
+	--hsm-border-light: #e2e8f0;
+	--hsm-border-default: #cbd5e1;
+
+	/* Backgrounds */
+	--hsm-bg-hover: #f8fafc;
+	--hsm-bg-header: rgba(248, 250, 252, 0.5);
+}
+
+/* ===========================================
+   Unified Table Styles
+   Used by both admin and frontend
+   =========================================== */
+.hsm-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+	color: var(--hsm-text-primary);
+}
+
+.hsm-table th {
+	padding: 10px 12px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--hsm-text-secondary);
+	text-align: left;
+	border-bottom: 1px solid var(--hsm-border-light);
+	background: var(--hsm-bg-header);
+}
+
+.hsm-table td {
+	padding: 10px 12px;
+	font-size: 14px;
+	color: var(--hsm-text-primary);
+	border-bottom: 1px solid var(--hsm-border-light);
+	vertical-align: middle;
+}
+
+.hsm-table tbody tr:hover {
+	background: var(--hsm-bg-hover);
+}
+
+.hsm-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.hsm-table .text-right {
+	text-align: right;
+}
+
+/* Table wrapper for overflow handling */
+.hsm-table-wrapper {
+	width: 100%;
+	overflow-x: auto;
+}
+
+/* ===========================================
+   Status Colors - Unified
+   =========================================== */
+.hsm-status-excellent,
+.hsm-score-excellent {
+	color: var(--hsm-color-excellent);
+}
+
+.hsm-status-good,
+.hsm-score-good {
+	color: var(--hsm-color-good);
+}
+
+.hsm-status-warning,
+.hsm-score-warning {
+	color: var(--hsm-color-warning);
+}
+
+.hsm-status-critical,
+.hsm-score-critical {
+	color: var(--hsm-color-critical);
+}
+
+.hsm-status-unknown,
+.hsm-score-unknown {
+	color: var(--hsm-color-unknown);
+}
+
+/* ===========================================
+   Cron Health Status - Unified
+   =========================================== */
+.hsm-cron-health {
+	font-weight: 600;
+	font-size: 12px;
+	letter-spacing: 0.02em;
+}
+
+.hsm-cron-health.healthy {
+	color: var(--hsm-color-excellent);
+}
+
+.hsm-cron-health.unhealthy {
+	color: var(--hsm-color-critical);
+}
+
+.hsm-cron-health.unknown {
+	color: var(--hsm-color-unknown);
+}
+
+/* ===========================================
+   Table Cell Types
+   Color/size inherited from .hsm-table td
+   =========================================== */
+.hsm-table-timestamp,
+.hsm-table-value,
+.hsm-timestamp-value {
+	font-family: 'Courier New', monospace;
+}
+
+.hsm-table-score {
+	font-weight: 600;
+}
+
+.hsm-table-label {
+	display: inline-flex;
+	align-items: center;
+	border-radius: 4px;
+	background-color: #f1f5f9;
+	padding: 2px 8px;
+	font-size: 12px;
+	font-weight: 500;
+	color: #475569;
+}

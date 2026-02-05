@@ -176,7 +176,7 @@ jQuery(document).ready(function($) {
 						var cronHealthClass = (cronHealthStatus === 'healthy' || cronHealthStatus === 'unhealthy') ? cronHealthStatus : 'unknown';
 
 						// Unified table matching dashboard/shortcode format.
-						html += '<table class="widefat striped">';
+						html += '<table class="hsm-table widefat striped">';
 						html += '<thead><tr>';
 						html += '<th><?php esc_html_e( 'Timestamp', 'hypercart-server-monitor' ); ?></th>';
 						html += '<th><?php esc_html_e( 'Score', 'hypercart-server-monitor' ); ?></th>';
@@ -190,14 +190,14 @@ jQuery(document).ready(function($) {
 
 						// Single row with current test results.
 						html += '<tr>';
-						html += '<td>' + escapeHtml(data.timestamp) + '</td>';
+						html += '<td class="hsm-table-timestamp">' + escapeHtml(data.timestamp) + '</td>';
 						html += '<td>' + score.combined.toFixed(1) + '</td>';
 						html += '<td>' + escapeHtml(score.label) + '</td>';
-						html += '<td>' + time1 + '</td>';
-						html += '<td>' + time2 + '</td>';
-						html += '<td>' + time3 + '</td>';
-						html += '<td>' + totalTime + '</td>';
-						html += '<td><span class="hsm-cron-health-status hsm-cron-health-' + cronHealthClass + '">' + escapeHtml(cronHealthLabel) + '</span></td>';
+						html += '<td class="hsm-table-value">' + time1 + '</td>';
+						html += '<td class="hsm-table-value">' + time2 + '</td>';
+						html += '<td class="hsm-table-value">' + time3 + '</td>';
+						html += '<td class="hsm-table-value">' + totalTime + '</td>';
+						html += '<td><span class="hsm-cron-health ' + cronHealthClass + '">' + escapeHtml(cronHealthLabel) + '</span></td>';
 						html += '</tr>';
 
 						html += '</tbody></table>';

@@ -347,7 +347,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_2 ); ?> ms</td>
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_3 ); ?> ms</td>
 								<td class="hsm-table-value text-right"><?php echo esc_html( $total_time ); ?> ms</td>
-								<td class="hsm-table-cron-health <?php echo esc_attr( $cron_health_class ); ?>"><?php echo esc_html( $cron_health_label ); ?></td>
+								<td><span class="hsm-cron-health <?php echo esc_attr( $cron_health_class ); ?>"><?php echo esc_html( $cron_health_label ); ?></span></td>
 							</tr>
 						<?php endforeach; ?>
 					</tbody>
