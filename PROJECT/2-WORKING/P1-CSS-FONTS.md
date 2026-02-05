@@ -1,15 +1,24 @@
 Refactoring Plan: Unified Benchmark Table CSS
+Status: To be Reviewed
 
-Status: Completed
+Goals: DRY, Maintainability, SSOT, and Remove too many layer
+
+Update: Built new Font Selector UI settings because of back and forth with AI to tweak the fonts
 
 1. Create a Shared CSS File with CSS Variables
 Create a new shared.css file that both admin and frontend will import. This file will contain CSS custom properties for colors (status colors like excellent/good/warning/critical), typography (font-family, base sizes), and spacing. Currently, you have duplicated color definitions in admin.css:48-71 and frontend.css:205-253. By centralizing these into :root variables like --hsm-color-excellent: #22c55e, both stylesheets can reference the same values and any change propagates everywhere.
 
+Status: To be Reviewed
+
 2. Unify Table Styling into One Reusable Component
 The table styling is the most duplicated code—admin.css:82-112 (31 lines) vs frontend.css:374-487 (113 lines). Merge these into a single .hsm-table class in shared.css that handles headers, cells, hover states, and text alignment. Remove the WordPress-specific widefat dependency and use your own consistent styling. Since you're okay with identical text sizes, pick one font-size (e.g., 14px or 0.875rem) for all table cells across both views.
 
+Status: To be Reviewed
+
 3. Consolidate Score and Status Badge Classes
 Currently there are 4 separate implementations of status colors: score display, score badges, table scores, and cron health indicators—each defined twice (admin + frontend). Collapse these into two shared classes: .hsm-status-badge for inline labels and .hsm-score-display for the large score number. Apply color variants via modifier classes like .hsm-status-badge--excellent that reference the CSS variables from step 1.
+
+Status: To be Reviewed
 
 4. Simplify PHP Templates to Use Unified Classes
 Update tab-dashboard.php and shortcode-dashboard.php to use the same table class names. Remove the widefat striped WordPress classes from admin tables and replace with .hsm-table. This allows you to delete most of admin.css table-specific styles and trim frontend.css significantly—estimating a reduction from ~1,026 combined lines to ~500.
