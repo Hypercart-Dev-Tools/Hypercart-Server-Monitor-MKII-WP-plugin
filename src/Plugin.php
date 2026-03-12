@@ -22,6 +22,11 @@ class Plugin {
 	const TRANSIENT_CRON_HEALTH = 'hypercart_server_monitor_cron_health_check';
 
 	/**
+	 * Transient key for frontend shortcode health data cache.
+	 */
+	const TRANSIENT_FRONTEND_HEALTH_DATA = 'hypercart_server_monitor_frontend_health_data';
+
+	/**
 	 * Option key for email notifications enabled/disabled.
 	 */
 	const OPTION_EMAIL_NOTIFICATIONS_ENABLED = 'hypercart_server_monitor_email_notifications_enabled';
@@ -318,8 +323,19 @@ class Plugin {
 		// END V2 NO-INDEX RULE
 
 		// Safeguard: this view must remain read-only (no writes or state changes).
-		$repository    = new Persistence\HealthRepository();
-		$data          = $repository->read( false );
+		$cache_ttl = (int) apply_filters( 'hypercart_server_monitor_frontend_shortcode_cache_ttl', 30 );
+		$cache_ttl = max( 0, $cache_ttl );
+
+		$cache_key = $this->get_frontend_health_data_transient_key();
+		$data      = $cache_ttl > 0 ? get_transient( $cache_key ) : false;
+
+		if ( ! is_array( $data ) ) {
+			$repository = new Persistence\HealthRepository();
+			$data       = $repository->read( false );
+			if ( $cache_ttl > 0 ) {
+				set_transient( $cache_key, $data, $cache_ttl );
+			}
+		}
 		$samples       = $data['samples'] ?? array();
 		$latest_sample = ! empty( $samples ) ? end( $samples ) : null;
 
@@ -508,23 +524,26 @@ class Plugin {
 
 			// Persist to JSON.
 			$repository = new Persistence\HealthRepository();
-			$sample     = array(
-				'ts_utc' => \Hypercart_Time::iso8601( $start_time ),
-				'score'  => $score,
-				'raw'    => $raw_metrics,
-				'meta'   => array(
+				$sample     = array(
+					'ts_utc' => \Hypercart_Time::iso8601( $start_time ),
+					'score'  => $score,
+					'raw'    => $raw_metrics,
+					'meta'   => array(
 					'collector'   => 'hypercart-server-monitor',
 					'duration_ms' => ( \Hypercart_Time::now() - $start_time ) * 1000,
 					'source'      => $options['source'],
 					'cron_health' => $cron_health_snapshot,
 				),
-			);
+				);
 
-			if ( ! $repository->add_sample( $sample ) ) {
-				throw new \Exception( 'Failed to write JSON' );
-			}
+				if ( ! $repository->add_sample( $sample ) ) {
+					throw new \Exception( 'Failed to write JSON' );
+				}
 
-			if ( $options['send_email'] ) {
+				// Invalidate frontend cache after writing a new sample.
+				delete_transient( $this->get_frontend_health_data_transient_key() );
+
+				if ( $options['send_email'] ) {
 				// Transition to emailing state.
 				if ( ! $this->state_store->transition_to( 'emailing' ) ) {
 					\Hypercart_Logger::warning(
@@ -695,11 +714,23 @@ class Plugin {
 		);
 		$s        = wp_parse_args( $settings, $defaults );
 
-		$css = "
-		/* Custom Font Settings - Generated from Settings Tab */
-		.hsm-table-timestamp,
-		.hsm-timestamp-value {
-			font-size: {$s['timestamp_size']}px !important;
+			// Defense-in-depth: sanitize settings again at render time.
+			$s['timestamp_size']   = max( 8, min( 32, absint( $s['timestamp_size'] ) ) );
+			$s['benchmark_size']   = max( 8, min( 32, absint( $s['benchmark_size'] ) ) );
+			$s['health_size']      = max( 8, min( 32, absint( $s['health_size'] ) ) );
+			$s['timestamp_weight'] = $this->sanitize_font_weight( $s['timestamp_weight'], $defaults['timestamp_weight'] );
+			$s['benchmark_weight'] = $this->sanitize_font_weight( $s['benchmark_weight'], $defaults['benchmark_weight'] );
+			$s['health_weight']    = $this->sanitize_font_weight( $s['health_weight'], $defaults['health_weight'] );
+			$s['timestamp_color']  = sanitize_hex_color( $s['timestamp_color'] ) ?: $defaults['timestamp_color'];
+			$s['benchmark_color']  = sanitize_hex_color( $s['benchmark_color'] ) ?: $defaults['benchmark_color'];
+			$s['health_healthy']   = sanitize_hex_color( $s['health_healthy'] ) ?: $defaults['health_healthy'];
+			$s['health_unhealthy'] = sanitize_hex_color( $s['health_unhealthy'] ) ?: $defaults['health_unhealthy'];
+
+			$css = "
+			/* Custom Font Settings - Generated from Settings Tab */
+			.hsm-table-timestamp,
+			.hsm-timestamp-value {
+				font-size: {$s['timestamp_size']}px !important;
 			font-weight: {$s['timestamp_weight']} !important;
 			color: {$s['timestamp_color']} !important;
 		}
@@ -724,6 +755,45 @@ class Plugin {
 		";
 
 		return $css;
+	}
+
+		/**
+		 * Get the frontend shortcode transient cache key.
+		 *
+		 * @since 0.4.28
+		 * @return string
+		 */
+	private function get_frontend_health_data_transient_key() {
+		$key = self::TRANSIENT_FRONTEND_HEALTH_DATA;
+		if ( function_exists( 'get_current_blog_id' ) ) {
+			$key .= '_' . (int) get_current_blog_id();
+		}
+		return $key;
+	}
+
+		/**
+		 * Sanitize a font-weight value to a strict allowlist.
+		 *
+		 * @since 0.4.28
+		 * @param mixed  $weight  Raw font weight value.
+		 * @param string $default Default value if invalid.
+		 * @return string Sanitized font weight (e.g. "400").
+		 */
+	private function sanitize_font_weight( $weight, $default ) {
+		$allowed = array( '100', '200', '300', '400', '500', '600', '700', '800', '900' );
+
+			$weight = is_scalar( $weight ) ? trim( (string) $weight ) : '';
+			if ( in_array( $weight, $allowed, true ) ) {
+				return $weight;
+			}
+
+			$weight_int = absint( $weight );
+			$weight_str = (string) $weight_int;
+			if ( in_array( $weight_str, $allowed, true ) ) {
+				return $weight_str;
+			}
+
+		return in_array( $default, $allowed, true ) ? $default : '400';
 	}
 
 	/**

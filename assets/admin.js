@@ -85,37 +85,41 @@
 			}
 		});
 
-		// Cron Health Check - Auto-load on page load
-		function checkCronHealth() {
-			var $statusCell = $('#hsm-cron-health-status');
-			if ($statusCell.length) {
-				$.ajax({
-					url: hsmAdmin.restUrl + 'cron-health/v1/status',
-					type: 'GET',
-					timeout: 10000, // 10 seconds
-					success: function(response) {
-						var html = '';
-						if (response.status === 'healthy') {
-							html = '<span class="hsm-status-ok">✓ Healthy</span>';
-							if (response.last_run) {
-								html += ' <span class="description">(Last run: ' + response.last_run + ')</span>';
+			// Cron Health Check - Auto-load on page load
+			function checkCronHealth() {
+				var $statusCell = $('#hsm-cron-health-status');
+				if ($statusCell.length) {
+					$.ajax({
+						url: hsmAdmin.restUrl + 'cron-health/v1/status',
+						type: 'GET',
+						timeout: 10000, // 10 seconds
+						success: function(response) {
+							$statusCell.empty();
+							if (response.status === 'healthy') {
+								$statusCell.append($('<span>').addClass('hsm-status-ok').text('✓ Healthy'));
+								if (response.last_run) {
+									$statusCell.append(' ');
+									$statusCell.append($('<span>').addClass('description').text('(Last run: ' + response.last_run + ')'));
+								}
+							} else {
+								$statusCell.append($('<span>').addClass('hsm-status-error').text('✗ Unhealthy'));
+								$statusCell.append(' ');
+								$statusCell.append($('<span>').addClass('description').text('Cron may not be running properly'));
 							}
-						} else {
-							html = '<span class="hsm-status-error">✗ Unhealthy</span>';
-							html += ' <span class="description">Cron may not be running properly</span>';
+						},
+						error: function(xhr, status, error) {
+							if (status === 'timeout') {
+								$statusCell.empty().append($('<span>').addClass('hsm-status-error').text('✗ Request timed out after 10s'));
+							} else {
+								$statusCell.empty();
+								$statusCell.append($('<span>').addClass('hsm-status-error').text('✗ Error checking health'));
+								$statusCell.append(' ');
+								$statusCell.append($('<span>').addClass('description').text('(' + error + ')'));
+							}
 						}
-						$statusCell.html(html);
-					},
-					error: function(xhr, status, error) {
-						if (status === 'timeout') {
-							$statusCell.html('<span class="hsm-status-error">✗ Request timed out after 10s</span>');
-						} else {
-							$statusCell.html('<span class="hsm-status-error">✗ Error checking health</span> <span class="description">(' + error + ')</span>');
-						}
-					}
-				});
+					});
+				}
 			}
-		}
 
 		// Check cron health on page load
 		checkCronHealth();
@@ -233,45 +237,54 @@
 			success: function(response) {
 				$toggle.prop('disabled', false);
 
-				if (response.success) {
-					// Update status text
-					$status.text(enabled === '1' ? 'Enabled' : 'Disabled');
+					if (response.success) {
+						// Update status text
+						$status.text(enabled === '1' ? 'Enabled' : 'Disabled');
 
-					// Show success feedback
-					$feedback
-						.removeClass('error')
-						.addClass('success')
-						.html('<span class="dashicons dashicons-yes"></span> ' + response.data.message)
-						.fadeIn()
-						.delay(3000)
-						.fadeOut();
-				} else {
-					// Revert toggle on error
-					$toggle.prop('checked', enabled === '0');
+						// Show success feedback
+						$feedback
+							.removeClass('error')
+							.addClass('success')
+							.empty()
+							.append($('<span>').addClass('dashicons dashicons-yes'))
+							.append(' ')
+							.append(document.createTextNode(response.data.message || 'Saved.'))
+							.fadeIn()
+							.delay(3000)
+							.fadeOut();
+					} else {
+						// Revert toggle on error
+						$toggle.prop('checked', enabled === '0');
+
+						// Show error feedback
+						$feedback
+							.removeClass('success')
+							.addClass('error')
+							.empty()
+							.append($('<span>').addClass('dashicons dashicons-no'))
+							.append(' ')
+							.append(document.createTextNode((response.data && response.data.message) ? response.data.message : 'Failed to save setting'))
+							.fadeIn();
+					}
+				},
+				error: function(xhr, status, error) {
+					$toggle.prop('disabled', false);
+
+				// Revert toggle on error
+				$toggle.prop('checked', enabled === '0');
 
 					// Show error feedback
 					$feedback
 						.removeClass('success')
 						.addClass('error')
-						.html('<span class="dashicons dashicons-no"></span> ' + (response.data.message || 'Failed to save setting'))
+						.empty()
+						.append($('<span>').addClass('dashicons dashicons-no'))
+						.append(' ')
+						.append(document.createTextNode('AJAX error: ' + error))
 						.fadeIn();
 				}
-			},
-			error: function(xhr, status, error) {
-				$toggle.prop('disabled', false);
-
-				// Revert toggle on error
-				$toggle.prop('checked', enabled === '0');
-
-				// Show error feedback
-				$feedback
-					.removeClass('success')
-					.addClass('error')
-					.html('<span class="dashicons dashicons-no"></span> AJAX error: ' + error)
-					.fadeIn();
-			}
+			});
 		});
-	});
 
 		var $breakerButton = $('#hsm-run-breaker-test');
 		if ($breakerButton.length) {
@@ -297,21 +310,24 @@
 						$spinner.hide();
 						$breakerButton.prop('disabled', false);
 
-						if (response.success) {
-							var steps = response.data.steps || [];
-							var html = '<ul>';
-							for (var i = 0; i < steps.length; i++) {
-								html += '<li>' + steps[i].step + '</li>';
-							}
-							html += '</ul>';
-							if (response.data.message) {
-								html += '<p class="hsm-status-ok">' + response.data.message + '</p>';
-							}
-							$results.html(html).show();
-						} else {
-							var errorMsg = response.data && response.data.message ? response.data.message : 'Self test failed.';
-							$error.find('.hsm-breaker-error-message').text(errorMsg);
-							$error.show();
+							if (response.success) {
+								var steps = response.data.steps || [];
+								$results.empty();
+								if (steps.length) {
+									var $list = $('<ul>');
+									for (var i = 0; i < steps.length; i++) {
+										$list.append($('<li>').text(steps[i] && steps[i].step ? steps[i].step : ''));
+									}
+									$results.append($list);
+								}
+								if (response.data && response.data.message) {
+									$results.append($('<p>').addClass('hsm-status-ok').text(response.data.message));
+								}
+								$results.show();
+							} else {
+								var errorMsg = response.data && response.data.message ? response.data.message : 'Self test failed.';
+								$error.find('.hsm-breaker-error-message').text(errorMsg);
+								$error.show();
 						}
 					},
 					error: function(xhr, status, error) {

@@ -5,6 +5,15 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.28] - 2026-03-12
+
+### Fixed
+- **Font Weight Allowlist (CSS Injection Hardening)**: Font weight settings are now validated against an allowlist (100–900) on save and re-sanitized at render time to prevent CSS injection via crafted values.
+- **Admin UI DOM XSS Hardening**: Replaced unsafe `.html()` insertions for server-provided strings with text/DOM-based rendering in admin scripts.
+
+### Added
+- **Frontend Shortcode Cache**: Added a short transient cache for frontend shortcode health-data reads to reduce per-request disk I/O (filterable via `hypercart_server_monitor_frontend_shortcode_cache_ttl`).
+
 ## [0.4.27] - 2026-01-31
 
 ### Fixed

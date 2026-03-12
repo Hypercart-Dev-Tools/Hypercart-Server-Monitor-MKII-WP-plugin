@@ -172,11 +172,23 @@ class AdminController {
 		);
 		$s        = wp_parse_args( $settings, $defaults );
 
-		$css = "
-		/* Custom Font Settings - Generated from Settings Tab */
-		.hsm-table-timestamp,
-		.hsm-timestamp-value {
-			font-size: {$s['timestamp_size']}px !important;
+			// Defense-in-depth: sanitize settings again at render time.
+			$s['timestamp_size']   = max( 8, min( 32, absint( $s['timestamp_size'] ) ) );
+			$s['benchmark_size']   = max( 8, min( 32, absint( $s['benchmark_size'] ) ) );
+			$s['health_size']      = max( 8, min( 32, absint( $s['health_size'] ) ) );
+			$s['timestamp_weight'] = $this->sanitize_font_weight( $s['timestamp_weight'], $defaults['timestamp_weight'] );
+			$s['benchmark_weight'] = $this->sanitize_font_weight( $s['benchmark_weight'], $defaults['benchmark_weight'] );
+			$s['health_weight']    = $this->sanitize_font_weight( $s['health_weight'], $defaults['health_weight'] );
+			$s['timestamp_color']  = sanitize_hex_color( $s['timestamp_color'] ) ?: $defaults['timestamp_color'];
+			$s['benchmark_color']  = sanitize_hex_color( $s['benchmark_color'] ) ?: $defaults['benchmark_color'];
+			$s['health_healthy']   = sanitize_hex_color( $s['health_healthy'] ) ?: $defaults['health_healthy'];
+			$s['health_unhealthy'] = sanitize_hex_color( $s['health_unhealthy'] ) ?: $defaults['health_unhealthy'];
+
+			$css = "
+			/* Custom Font Settings - Generated from Settings Tab */
+			.hsm-table-timestamp,
+			.hsm-timestamp-value {
+				font-size: {$s['timestamp_size']}px !important;
 			font-weight: {$s['timestamp_weight']} !important;
 			color: {$s['timestamp_color']} !important;
 		}
@@ -389,13 +401,13 @@ class AdminController {
 		// Sanitize inputs.
 		$sanitized = array(
 			'timestamp_size'   => absint( $font_settings['timestamp_size'] ?? 14 ),
-			'timestamp_weight' => sanitize_text_field( $font_settings['timestamp_weight'] ?? '400' ),
+			'timestamp_weight' => $this->sanitize_font_weight( $font_settings['timestamp_weight'] ?? '400', '400' ),
 			'timestamp_color'  => sanitize_hex_color( $font_settings['timestamp_color'] ?? '#000000' ),
 			'benchmark_size'   => absint( $font_settings['benchmark_size'] ?? 14 ),
-			'benchmark_weight' => sanitize_text_field( $font_settings['benchmark_weight'] ?? '400' ),
+			'benchmark_weight' => $this->sanitize_font_weight( $font_settings['benchmark_weight'] ?? '400', '400' ),
 			'benchmark_color'  => sanitize_hex_color( $font_settings['benchmark_color'] ?? '#000000' ),
 			'health_size'      => absint( $font_settings['health_size'] ?? 12 ),
-			'health_weight'    => sanitize_text_field( $font_settings['health_weight'] ?? '600' ),
+			'health_weight'    => $this->sanitize_font_weight( $font_settings['health_weight'] ?? '600', '600' ),
 			'health_healthy'   => sanitize_hex_color( $font_settings['health_healthy'] ?? '#059669' ),
 			'health_unhealthy' => sanitize_hex_color( $font_settings['health_unhealthy'] ?? '#dc2626' ),
 		);
@@ -426,6 +438,31 @@ class AdminController {
 			'success'
 		);
 	}
+
+		/**
+		 * Sanitize a font-weight value to a strict allowlist.
+		 *
+		 * @since 0.4.28
+		 * @param mixed  $weight   Raw font weight value.
+		 * @param string $default  Default value if invalid.
+		 * @return string Sanitized font weight (e.g. "400").
+		 */
+		private function sanitize_font_weight( $weight, $default ) {
+			$allowed = array( '100', '200', '300', '400', '500', '600', '700', '800', '900' );
+
+			$weight = is_scalar( $weight ) ? trim( (string) $weight ) : '';
+			if ( in_array( $weight, $allowed, true ) ) {
+				return $weight;
+			}
+
+			$weight_int = absint( $weight );
+			$weight_str = (string) $weight_int;
+			if ( in_array( $weight_str, $allowed, true ) ) {
+				return $weight_str;
+			}
+
+			return in_array( $default, $allowed, true ) ? $default : '400';
+		}
 
 	/**
 	 * Render Debug tab.
