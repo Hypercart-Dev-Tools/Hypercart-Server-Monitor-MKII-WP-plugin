@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/yourusername/wp-server-performance-monitor
  * Description: Monitors server health (CPU, Memory, Disk) every 15 minutes with email alerts and admin dashboard. Requires Hypercart Helper.
 	 * Version: 0.4.27
- * Author: Your Name
+ * Author: Hypercart DBA Neochrome
  * Author URI: https://hypercart.io
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
