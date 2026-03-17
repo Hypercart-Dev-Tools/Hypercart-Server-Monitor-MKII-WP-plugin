@@ -324,6 +324,7 @@ class FsmStateStore {
 	public function run_breaker_self_test() {
 		return $this->with_state_lock(
 			function () {
+				// Read state once at the start of the lock.
 				$data          = $this->get_state_data();
 				$current_state = $data['state'] ?? 'idle';
 
@@ -343,6 +344,7 @@ class FsmStateStore {
 				$steps    = array();
 				$now      = \Hypercart_Time::now();
 
+				// Step 1: Trip breaker.
 				$data['failure_count'] = max( $data['failure_count'], self::FAILURE_THRESHOLD );
 				$this->trip_locked( $data, 'Self test trip', 'self_test' );
 				$steps[] = array(
@@ -350,6 +352,7 @@ class FsmStateStore {
 					'status' => 'ok',
 				);
 
+				// Step 2: Enter half-open (probe allowed).
 				$data = $this->get_state_data();
 				$data['cooldown_until'] = $now - 1;
 				$this->update_state_data_locked( $data );
@@ -360,6 +363,7 @@ class FsmStateStore {
 					'status' => 'ok',
 				);
 
+				// Step 3: Probe failure re-trips.
 				$data = $this->get_state_data();
 				$data['failure_count'] = max( $data['failure_count'] + 1, self::FAILURE_THRESHOLD );
 				$this->trip_locked( $data, 'Self test probe failure', 'probe_failure' );
@@ -368,6 +372,7 @@ class FsmStateStore {
 					'status' => 'ok',
 				);
 
+				// Step 4: Cooldown expiry allows probe.
 				$data = $this->get_state_data();
 				$data['cooldown_until'] = $now - 1;
 				$this->update_state_data_locked( $data );
@@ -378,6 +383,7 @@ class FsmStateStore {
 					'status' => 'ok',
 				);
 
+				// Step 5: Probe success closes breaker.
 				$data = $this->get_state_data();
 				$this->update_state_locked(
 					$data,
@@ -393,6 +399,7 @@ class FsmStateStore {
 					'status' => 'ok',
 				);
 
+				// Restore original state.
 				update_option( self::OPTION_NAME, $original, false );
 
 				\Hypercart_Logger::info(

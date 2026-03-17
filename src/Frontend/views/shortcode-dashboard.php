@@ -21,10 +21,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<!-- Header -->
 	<div class="hsm-header">
 		<div>
-			<h1 class="hsm-header-title"><?php esc_html_e( 'Server Health 2026', 'hypercart-server-monitor' ); ?></h1>
-			<p class="hsm-header-subtitle"><?php esc_html_e( 'Real-time performance benchmarks and monitoring.', 'hypercart-server-monitor' ); ?></p>
-		</div>
-		<div>
 			<span class="hsm-badge">
 				<span class="hsm-badge-dot"></span>
 				<?php esc_html_e( 'Read-only view', 'hypercart-server-monitor' ); ?>
@@ -158,6 +154,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<div class="hsm-metric-item">
 							<div class="hsm-metric-label">
 								<p class="hsm-metric-name"><?php esc_html_e( 'Fastest Run', 'hypercart-server-monitor' ); ?></p>
+								<p class="hsm-metric-hint"><?php esc_html_e( '(last 24 hrs)', 'hypercart-server-monitor' ); ?></p>
 							</div>
 							<div class="hsm-metric-value medium fastest">
 								<?php echo esc_html( number_format( $benchmark_min, 2 ) ); ?> ms
@@ -167,6 +164,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<div class="hsm-metric-item">
 							<div class="hsm-metric-label">
 								<p class="hsm-metric-name"><?php esc_html_e( 'Slowest Run', 'hypercart-server-monitor' ); ?></p>
+								<p class="hsm-metric-hint"><?php esc_html_e( '(last 24 hrs)', 'hypercart-server-monitor' ); ?></p>
 							</div>
 							<div class="hsm-metric-value medium slowest">
 								<?php echo esc_html( number_format( $benchmark_max, 2 ) ); ?> ms
@@ -248,13 +246,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<!-- Recent Samples Table -->
 	<?php if ( ! empty( $samples ) ) : ?>
+		<?php
+		// Pagination setup.
+		$per_page      = 10;
+		$total_samples = count( $samples );
+		$total_pages   = max( 1, ceil( $total_samples / $per_page ) );
+		$current_page  = isset( $_GET['hsm_page'] ) ? max( 1, min( (int) $_GET['hsm_page'], $total_pages ) ) : 1;
+		$offset        = ( $current_page - 1 ) * $per_page;
+
+		// Get samples for current page (reverse chronological order).
+		$reversed_samples = array_reverse( $samples );
+		$paged_samples    = array_slice( $reversed_samples, $offset, $per_page );
+		?>
 		<div class="hsm-card">
 			<div class="hsm-card-header" style="border-bottom: 1px solid #f1f5f9;">
 				<h3 class="hsm-card-title"><?php esc_html_e( 'Recent Samples', 'hypercart-server-monitor' ); ?></h3>
-				<p class="hsm-card-description"><?php esc_html_e( 'A log of the most recent benchmark executions. Timestamps shown in UTC — hover to see local time.', 'hypercart-server-monitor' ); ?></p>
+				<p class="hsm-card-description">
+					<?php
+					printf(
+						/* translators: 1: current page, 2: total pages, 3: total samples */
+						esc_html__( 'A log of benchmark executions. Timestamps shown in UTC — hover to see local time. Page %1$d of %2$d (%3$d total samples)', 'hypercart-server-monitor' ),
+						$current_page,
+						$total_pages,
+						$total_samples
+					);
+					?>
+				</p>
 			</div>
 			<div class="hsm-table-wrapper">
-				<table class="hsm-table" data-hsm-timezone="UTC">
+				<table class="hsm-table" data-hsm-timezone="UTC" id="hsm-samples-table">
 					<thead>
 						<tr>
 							<th data-hsm-column="timestamp">
@@ -265,13 +285,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<th class="text-right"><?php esc_html_e( 'Benchmark 1', 'hypercart-server-monitor' ); ?></th>
 							<th class="text-right"><?php esc_html_e( 'Benchmark 2', 'hypercart-server-monitor' ); ?></th>
 							<th class="text-right"><?php esc_html_e( 'Benchmark 3', 'hypercart-server-monitor' ); ?></th>
+							<th class="text-right"><?php esc_html_e( 'Total', 'hypercart-server-monitor' ); ?></th>
 							<th><?php esc_html_e( 'Cron Health', 'hypercart-server-monitor' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
 						<?php
-						$recent_samples = array_slice( array_reverse( $samples ), 0, 10 );
-						foreach ( $recent_samples as $sample ) :
+						foreach ( $paged_samples as $sample ) :
 							$ts    = isset( $sample['ts_utc'] ) ? strtotime( $sample['ts_utc'] ) : null;
 							$score = $sample['score'] ?? array();
 							$raw   = $sample['raw'] ?? array();
@@ -279,6 +299,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 							$time_1 = isset( $times[0] ) ? number_format( $times[0], 2 ) : 'N/A';
 							$time_2 = isset( $times[1] ) ? number_format( $times[1], 2 ) : 'N/A';
 							$time_3 = isset( $times[2] ) ? number_format( $times[2], 2 ) : 'N/A';
+
+							// Calculate total time (sum of all 3 runs).
+							$total_time = 'N/A';
+							if ( isset( $times[0], $times[1], $times[2] ) ) {
+								$total_time = number_format( $times[0] + $times[1] + $times[2], 2 );
+							}
 
 							// Cron health snapshot captured at run time (if available).
 							$cron_health_meta   = $sample['meta']['cron_health'] ?? array();
@@ -320,12 +346,121 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_1 ); ?> ms</td>
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_2 ); ?> ms</td>
 								<td class="hsm-table-value text-right"><?php echo esc_html( $time_3 ); ?> ms</td>
-								<td class="hsm-table-cron-health <?php echo esc_attr( $cron_health_class ); ?>"><?php echo esc_html( $cron_health_label ); ?></td>
+								<td class="hsm-table-value text-right"><?php echo esc_html( $total_time ); ?> ms</td>
+								<td><span class="hsm-cron-health <?php echo esc_attr( $cron_health_class ); ?>"><?php echo esc_html( $cron_health_label ); ?></span></td>
 							</tr>
 						<?php endforeach; ?>
 					</tbody>
 				</table>
 			</div>
+
+			<!-- Pagination Controls -->
+			<?php if ( $total_pages > 1 ) : ?>
+				<div class="hsm-pagination">
+					<div class="hsm-pagination-info">
+						<?php
+						$showing_start = $offset + 1;
+						$showing_end   = min( $offset + $per_page, $total_samples );
+						printf(
+							/* translators: 1: start number, 2: end number, 3: total number */
+							esc_html__( 'Showing %1$d-%2$d of %3$d samples', 'hypercart-server-monitor' ),
+							$showing_start,
+							$showing_end,
+							$total_samples
+						);
+						?>
+					</div>
+					<div class="hsm-pagination-controls">
+						<?php if ( $current_page > 1 ) : ?>
+							<a href="<?php echo esc_url( add_query_arg( 'hsm_page', 1 ) ); ?>"
+							   class="hsm-pagination-button hsm-pagination-first"
+							   title="<?php esc_attr_e( 'First page', 'hypercart-server-monitor' ); ?>">
+								<span aria-hidden="true">&laquo;</span>
+								<span class="screen-reader-text"><?php esc_html_e( 'First page', 'hypercart-server-monitor' ); ?></span>
+							</a>
+							<a href="<?php echo esc_url( add_query_arg( 'hsm_page', $current_page - 1 ) ); ?>"
+							   class="hsm-pagination-button hsm-pagination-prev"
+							   title="<?php esc_attr_e( 'Previous page', 'hypercart-server-monitor' ); ?>">
+								<span aria-hidden="true">&lsaquo;</span>
+								<span class="screen-reader-text"><?php esc_html_e( 'Previous page', 'hypercart-server-monitor' ); ?></span>
+							</a>
+						<?php else : ?>
+							<span class="hsm-pagination-button hsm-pagination-disabled" aria-disabled="true">
+								<span aria-hidden="true">&laquo;</span>
+							</span>
+							<span class="hsm-pagination-button hsm-pagination-disabled" aria-disabled="true">
+								<span aria-hidden="true">&lsaquo;</span>
+							</span>
+						<?php endif; ?>
+
+						<?php
+						// Show page numbers with ellipsis for large page counts.
+						$page_links = array();
+						if ( $total_pages <= 7 ) {
+							// Show all pages if 7 or fewer.
+							$page_links = range( 1, $total_pages );
+						} else {
+							// Show first, last, current, and 2 on each side of current.
+							$page_links = array( 1 );
+							if ( $current_page > 3 ) {
+								$page_links[] = '...';
+							}
+							for ( $i = max( 2, $current_page - 1 ); $i <= min( $total_pages - 1, $current_page + 1 ); $i++ ) {
+								$page_links[] = $i;
+							}
+							if ( $current_page < $total_pages - 2 ) {
+								$page_links[] = '...';
+							}
+							$page_links[] = $total_pages;
+						}
+
+						foreach ( $page_links as $page ) :
+							if ( '...' === $page ) :
+								?>
+								<span class="hsm-pagination-ellipsis">...</span>
+								<?php
+							elseif ( $page === $current_page ) :
+								?>
+								<span class="hsm-pagination-button hsm-pagination-current" aria-current="page">
+									<?php echo esc_html( $page ); ?>
+								</span>
+								<?php
+							else :
+								?>
+								<a href="<?php echo esc_url( add_query_arg( 'hsm_page', $page ) ); ?>"
+								   class="hsm-pagination-button"
+								   title="<?php echo esc_attr( sprintf( __( 'Page %d', 'hypercart-server-monitor' ), $page ) ); ?>">
+									<?php echo esc_html( $page ); ?>
+								</a>
+								<?php
+							endif;
+						endforeach;
+						?>
+
+						<?php if ( $current_page < $total_pages ) : ?>
+							<a href="<?php echo esc_url( add_query_arg( 'hsm_page', $current_page + 1 ) ); ?>"
+							   class="hsm-pagination-button hsm-pagination-next"
+							   title="<?php esc_attr_e( 'Next page', 'hypercart-server-monitor' ); ?>">
+								<span aria-hidden="true">&rsaquo;</span>
+								<span class="screen-reader-text"><?php esc_html_e( 'Next page', 'hypercart-server-monitor' ); ?></span>
+							</a>
+							<a href="<?php echo esc_url( add_query_arg( 'hsm_page', $total_pages ) ); ?>"
+							   class="hsm-pagination-button hsm-pagination-last"
+							   title="<?php esc_attr_e( 'Last page', 'hypercart-server-monitor' ); ?>">
+								<span aria-hidden="true">&raquo;</span>
+								<span class="screen-reader-text"><?php esc_html_e( 'Last page', 'hypercart-server-monitor' ); ?></span>
+							</a>
+						<?php else : ?>
+							<span class="hsm-pagination-button hsm-pagination-disabled" aria-disabled="true">
+								<span aria-hidden="true">&rsaquo;</span>
+							</span>
+							<span class="hsm-pagination-button hsm-pagination-disabled" aria-disabled="true">
+								<span aria-hidden="true">&raquo;</span>
+							</span>
+						<?php endif; ?>
+					</div>
+				</div>
+			<?php endif; ?>
 		</div>
 	<?php endif; ?>
 

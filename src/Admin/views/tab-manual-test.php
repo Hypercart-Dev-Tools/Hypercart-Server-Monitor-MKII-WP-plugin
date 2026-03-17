@@ -98,9 +98,11 @@ jQuery(document).ready(function($) {
 					var data = response.data;
 					var score = data.score;
 					var rawMetrics = data.raw_metrics;
+					var cronHealth = data.cron_health || {};
 
 					console.log('Score:', score);
 					console.log('Raw metrics:', rawMetrics);
+					console.log('Cron health:', cronHealth);
 
 					// Validate response data.
 					if (!score || typeof score.combined === 'undefined') {
@@ -143,69 +145,65 @@ jQuery(document).ready(function($) {
 							html += '</ul></div>';
 						}
 
-					html += '<div class="hsm-score-display ' + scoreClass + '">';
-					html += '<div class="hsm-score-number">' + score.combined.toFixed(1) + '</div>';
-					html += '<div class="hsm-score-label">' + escapeHtml(score.label) + '</div>';
-					html += '</div>';
-					html += '<p class="hsm-timestamp"><?php esc_html_e( 'Completed at:', 'hypercart-server-monitor' ); ?> ' + escapeHtml(data.timestamp) + '</p>';
-					html += '<p><?php esc_html_e( 'Duration:', 'hypercart-server-monitor' ); ?> ' + data.duration_ms.toFixed(2) + ' ms</p>';
+						html += '<div class="hsm-score-display ' + scoreClass + '">';
+						html += '<div class="hsm-score-number">' + score.combined.toFixed(1) + '</div>';
+						html += '<div class="hsm-score-label">' + escapeHtml(score.label) + '</div>';
+						html += '</div>';
+						html += '<p class="hsm-timestamp"><?php esc_html_e( 'Completed at:', 'hypercart-server-monitor' ); ?> ' + escapeHtml(data.timestamp) + '</p>';
+						html += '<p><?php esc_html_e( 'Duration:', 'hypercart-server-monitor' ); ?> ' + data.duration_ms.toFixed(2) + ' ms</p>';
 
-					// Show logging status.
-					if (data.logged) {
-						html += '<p class="hsm-log-status"><span class="dashicons dashicons-yes-alt"></span> <?php esc_html_e( 'Test logged to Hypercart logs', 'hypercart-server-monitor' ); ?></p>';
-					}
+						// Show logging status.
+						if (data.logged) {
+							html += '<p class="hsm-log-status"><span class="dashicons dashicons-yes-alt"></span> <?php esc_html_e( 'Test logged to Hypercart logs', 'hypercart-server-monitor' ); ?></p>';
+						}
 
-					// Benchmark details table.
-					html += '<table class="widefat hsm-metrics-table">';
-					html += '<thead><tr>';
-					html += '<th><?php esc_html_e( 'Metric', 'hypercart-server-monitor' ); ?></th>';
-					html += '<th><?php esc_html_e( 'Value', 'hypercart-server-monitor' ); ?></th>';
-					html += '</tr></thead><tbody>';
+						// Extract benchmark times for unified table display.
+						var allTimes = rawMetrics.benchmark && rawMetrics.benchmark.all_times_ms ? rawMetrics.benchmark.all_times_ms : [];
+						var time1 = allTimes[0] ? allTimes[0].toFixed(2) : 'N/A';
+						var time2 = allTimes[1] ? allTimes[1].toFixed(2) : 'N/A';
+						var time3 = allTimes[2] ? allTimes[2].toFixed(2) : 'N/A';
 
-					// Benchmark row.
-					html += '<tr>';
-					html += '<td><?php esc_html_e( 'Benchmark Time (avg)', 'hypercart-server-monitor' ); ?> <span style="color: #666; font-size: 0.9em;">↓ <?php esc_html_e( 'lower is better', 'hypercart-server-monitor' ); ?></span></td>';
-					if (rawMetrics.benchmark && rawMetrics.benchmark.supported) {
-						html += '<td>' + (rawMetrics.benchmark.avg_time_ms || 0).toFixed(2) + ' ms</td>';
-					} else {
-						html += '<td>—</td>';
-					}
-					html += '</tr>';
+						// Calculate total time (sum of all 3 runs).
+						var totalTime = 'N/A';
+						if (allTimes[0] && allTimes[1] && allTimes[2]) {
+							var sum = allTimes[0] + allTimes[1] + allTimes[2];
+							totalTime = sum.toFixed(2);
+						}
 
-					// Min time row.
-					html += '<tr>';
-					html += '<td><?php esc_html_e( 'Fastest Run', 'hypercart-server-monitor' ); ?></td>';
-					if (rawMetrics.benchmark && rawMetrics.benchmark.supported) {
-						html += '<td>' + (rawMetrics.benchmark.min_time_ms || 0).toFixed(2) + ' ms</td>';
-					} else {
-						html += '<td>—</td>';
-					}
-					html += '</tr>';
+						// Determine cron health status and class.
+						var cronHealthStatus = cronHealth.status || '';
+						var cronHealthLabel = cronHealthStatus ? cronHealthStatus.toUpperCase() : 'N/A';
+						var cronHealthClass = (cronHealthStatus === 'healthy' || cronHealthStatus === 'unhealthy') ? cronHealthStatus : 'unknown';
 
-					// Max time row.
-					html += '<tr>';
-					html += '<td><?php esc_html_e( 'Slowest Run', 'hypercart-server-monitor' ); ?></td>';
-					if (rawMetrics.benchmark && rawMetrics.benchmark.supported) {
-						html += '<td>' + (rawMetrics.benchmark.max_time_ms || 0).toFixed(2) + ' ms</td>';
-					} else {
-						html += '<td>—</td>';
-					}
-					html += '</tr>';
+						// Unified table matching dashboard/shortcode format.
+						html += '<table class="hsm-table widefat striped">';
+						html += '<thead><tr>';
+						html += '<th><?php esc_html_e( 'Timestamp', 'hypercart-server-monitor' ); ?></th>';
+						html += '<th><?php esc_html_e( 'Score', 'hypercart-server-monitor' ); ?></th>';
+						html += '<th><?php esc_html_e( 'Label', 'hypercart-server-monitor' ); ?></th>';
+						html += '<th><?php esc_html_e( 'Run 1 (ms)', 'hypercart-server-monitor' ); ?></th>';
+						html += '<th><?php esc_html_e( 'Run 2 (ms)', 'hypercart-server-monitor' ); ?></th>';
+						html += '<th><?php esc_html_e( 'Run 3 (ms)', 'hypercart-server-monitor' ); ?></th>';
+						html += '<th><?php esc_html_e( 'Total (ms)', 'hypercart-server-monitor' ); ?></th>';
+						html += '<th><?php esc_html_e( 'Cron Health', 'hypercart-server-monitor' ); ?></th>';
+						html += '</tr></thead><tbody>';
 
-					// Iterations row.
-					html += '<tr>';
-					html += '<td><?php esc_html_e( 'Iterations (per run)', 'hypercart-server-monitor' ); ?></td>';
-					if (rawMetrics.benchmark && rawMetrics.benchmark.supported) {
-						html += '<td>' + (rawMetrics.benchmark.iterations || 0) + '</td>';
-					} else {
-						html += '<td>—</td>';
-					}
-					html += '</tr>';
+						// Single row with current test results.
+						html += '<tr>';
+						html += '<td class="hsm-table-timestamp">' + escapeHtml(data.timestamp) + '</td>';
+						html += '<td>' + score.combined.toFixed(1) + '</td>';
+						html += '<td>' + escapeHtml(score.label) + '</td>';
+						html += '<td class="hsm-table-value">' + time1 + '</td>';
+						html += '<td class="hsm-table-value">' + time2 + '</td>';
+						html += '<td class="hsm-table-value">' + time3 + '</td>';
+						html += '<td class="hsm-table-value">' + totalTime + '</td>';
+						html += '<td><span class="hsm-cron-health ' + cronHealthClass + '">' + escapeHtml(cronHealthLabel) + '</span></td>';
+						html += '</tr>';
 
-					html += '</tbody></table>';
-					html += '</div>';
+						html += '</tbody></table>';
+						html += '</div>';
 
-					$results.html(html).show();
+						$results.html(html).show();
 
 					} catch (e) {
 						console.error('Error building results HTML:', e);

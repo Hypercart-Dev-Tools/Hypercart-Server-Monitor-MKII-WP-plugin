@@ -22,6 +22,16 @@ class Plugin {
 	const TRANSIENT_CRON_HEALTH = 'hypercart_server_monitor_cron_health_check';
 
 	/**
+	 * Transient key for frontend shortcode health data cache.
+	 */
+	const TRANSIENT_FRONTEND_HEALTH_DATA = 'hypercart_server_monitor_frontend_health_data';
+
+	/**
+	 * Option key for email notifications enabled/disabled.
+	 */
+	const OPTION_EMAIL_NOTIFICATIONS_ENABLED = 'hypercart_server_monitor_email_notifications_enabled';
+
+	/**
 	 * Plugin instance.
 	 *
 	 * @var Plugin|null
@@ -218,7 +228,7 @@ class Plugin {
 	 * @param int|null $override_last_run Optional last run timestamp override.
 	 * @return array{status:string,last_run:?int,next_run:?int,transient_present:bool}
 	 */
-	private function determine_cron_health_state( $override_last_run = null ) {
+	public function determine_cron_health_state( $override_last_run = null ) {
 		$last_run = null;
 		if ( is_numeric( $override_last_run ) ) {
 			$last_run = (int) $override_last_run;
@@ -313,8 +323,19 @@ class Plugin {
 		// END V2 NO-INDEX RULE
 
 		// Safeguard: this view must remain read-only (no writes or state changes).
-		$repository    = new Persistence\HealthRepository();
-		$data          = $repository->read( false );
+		$cache_ttl = (int) apply_filters( 'hypercart_server_monitor_frontend_shortcode_cache_ttl', 30 );
+		$cache_ttl = max( 0, $cache_ttl );
+
+		$cache_key = $this->get_frontend_health_data_transient_key();
+		$data      = $cache_ttl > 0 ? get_transient( $cache_key ) : false;
+
+		if ( ! is_array( $data ) ) {
+			$repository = new Persistence\HealthRepository();
+			$data       = $repository->read( false );
+			if ( $cache_ttl > 0 ) {
+				set_transient( $cache_key, $data, $cache_ttl );
+			}
+		}
 		$samples       = $data['samples'] ?? array();
 		$latest_sample = ! empty( $samples ) ? end( $samples ) : null;
 
@@ -323,12 +344,24 @@ class Plugin {
 			\Hypercart_Charts::enqueue( array( 'context' => 'hypercart-server-monitor-frontend' ) );
 		}
 
+		// Enqueue shared styles (used by both admin and frontend).
 		wp_enqueue_style(
-			'hypercart-server-monitor-frontend',
-			plugins_url( 'assets/frontend.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			'hypercart-server-monitor-shared',
+			plugins_url( 'assets/shared.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
 			array(),
 			HYPERCART_SERVER_MONITOR_VERSION
 		);
+
+		// Enqueue frontend styles (depends on shared).
+		wp_enqueue_style(
+			'hypercart-server-monitor-frontend',
+			plugins_url( 'assets/frontend.css', HYPERCART_SERVER_MONITOR_PLUGIN_FILE ),
+			array( 'hypercart-server-monitor-shared' ),
+			HYPERCART_SERVER_MONITOR_VERSION
+		);
+
+		// Add inline CSS for font customization.
+		wp_add_inline_style( 'hypercart-server-monitor-shared', $this->get_custom_font_css() );
 
 		ob_start();
 		include __DIR__ . '/Frontend/views/shortcode-dashboard.php';
@@ -339,10 +372,14 @@ class Plugin {
 	 * Run monitoring task (called by cron).
 	 */
 	public function run_monitoring() {
+		// Check if email notifications are enabled (default: true).
+		$email_enabled = get_option( self::OPTION_EMAIL_NOTIFICATIONS_ENABLED, '1' );
+		$send_email    = '1' === $email_enabled;
+
 		// Safeguard: keep breaker gating centralized via the FSM store.
 		$this->run_monitoring_internal(
 			array(
-				'send_email'             => true,
+				'send_email'             => $send_email,
 				'respect_circuit_breaker'=> true,
 				'track_failures'         => true,
 				'allow_probe'            => true,
@@ -441,11 +478,23 @@ class Plugin {
 
 			// Transition to scheduled state (cron only).
 			if ( $options['use_scheduled_state'] ) {
-				$this->state_store->transition_to( 'scheduled' );
+				if ( ! $this->state_store->transition_to( 'scheduled' ) ) {
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Failed to transition to scheduled state (lock not acquired)',
+						array()
+					);
+				}
 			}
 
 			// Transition to running state.
-			$this->state_store->transition_to( 'running' );
+			if ( ! $this->state_store->transition_to( 'running' ) ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Failed to transition to running state (lock not acquired)',
+					array()
+				);
+			}
 
 			// Collect metrics.
 			$raw_metrics = $this->collect_metrics();
@@ -455,7 +504,13 @@ class Plugin {
 			$score  = $scorer->calculate_score( $raw_metrics, true );
 
 			// Transition to writing state.
-			$this->state_store->transition_to( 'writing' );
+			if ( ! $this->state_store->transition_to( 'writing' ) ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Failed to transition to writing state (lock not acquired)',
+					array()
+				);
+			}
 
 			// Snapshot cron health at the end of this run for historical display.
 			$override_last_run   = ! empty( $options['use_scheduled_state'] ) ? $start_time : null;
@@ -469,25 +524,34 @@ class Plugin {
 
 			// Persist to JSON.
 			$repository = new Persistence\HealthRepository();
-			$sample     = array(
-				'ts_utc' => \Hypercart_Time::iso8601( $start_time ),
-				'score'  => $score,
-				'raw'    => $raw_metrics,
-				'meta'   => array(
+				$sample     = array(
+					'ts_utc' => \Hypercart_Time::iso8601( $start_time ),
+					'score'  => $score,
+					'raw'    => $raw_metrics,
+					'meta'   => array(
 					'collector'   => 'hypercart-server-monitor',
 					'duration_ms' => ( \Hypercart_Time::now() - $start_time ) * 1000,
 					'source'      => $options['source'],
 					'cron_health' => $cron_health_snapshot,
 				),
-			);
+				);
 
-			if ( ! $repository->add_sample( $sample ) ) {
-				throw new \Exception( 'Failed to write JSON' );
-			}
+				if ( ! $repository->add_sample( $sample ) ) {
+					throw new \Exception( 'Failed to write JSON' );
+				}
 
-			if ( $options['send_email'] ) {
+				// Invalidate frontend cache after writing a new sample.
+				delete_transient( $this->get_frontend_health_data_transient_key() );
+
+				if ( $options['send_email'] ) {
 				// Transition to emailing state.
-				$this->state_store->transition_to( 'emailing' );
+				if ( ! $this->state_store->transition_to( 'emailing' ) ) {
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Failed to transition to emailing state (lock not acquired)',
+						array()
+					);
+				}
 
 				// Send email notification.
 				$email_service = new Services\EmailService();
@@ -504,13 +568,19 @@ class Plugin {
 
 			// Transition to completed state.
 			$duration_ms = ( \Hypercart_Time::now() - $start_time ) * 1000;
-			$this->state_store->transition_to(
+			if ( ! $this->state_store->transition_to(
 				'completed',
 				array(
 					'last_run_utc'     => $start_time,
 					'last_duration_ms' => $duration_ms,
 				)
-			);
+			) ) {
+				\Hypercart_Logger::warning(
+					'hypercart-server-monitor',
+					'Failed to transition to completed state (lock not acquired)',
+					array()
+				);
+			}
 
 			// Reset failure counter on success.
 			if ( $probe_run ) {
@@ -541,14 +611,41 @@ class Plugin {
 		} catch ( \Exception $e ) {
 			// Record error.
 			if ( $probe_run ) {
-				$this->state_store->record_probe_failure( $e->getMessage() );
+				$probe_result = $this->state_store->record_probe_failure( $e->getMessage() );
+				// If lock failed, fall back to error state transition.
+				if ( false === $probe_result ) {
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Failed to record probe failure (lock not acquired), falling back to error state',
+						array()
+					);
+					if ( ! $this->state_store->transition_to( 'error' ) ) {
+						\Hypercart_Logger::warning(
+							'hypercart-server-monitor',
+							'Failed to transition to error state (lock not acquired)',
+							array()
+						);
+					}
+				}
 			} elseif ( $options['track_failures'] ) {
 				$error_result = $this->state_store->record_error( $e->getMessage() );
 				if ( ! is_array( $error_result ) || empty( $error_result['tripped'] ) ) {
-					$this->state_store->transition_to( 'error' );
+					if ( ! $this->state_store->transition_to( 'error' ) ) {
+						\Hypercart_Logger::warning(
+							'hypercart-server-monitor',
+							'Failed to transition to error state (lock not acquired)',
+							array()
+						);
+					}
 				}
 			} else {
-				$this->state_store->transition_to( 'error' );
+				if ( ! $this->state_store->transition_to( 'error' ) ) {
+					\Hypercart_Logger::warning(
+						'hypercart-server-monitor',
+						'Failed to transition to error state (lock not acquired)',
+						array()
+					);
+				}
 			}
 
 			\Hypercart_Logger::error(
@@ -594,6 +691,109 @@ class Plugin {
 		);
 		array_unshift( $links, $settings_link );
 		return $links;
+	}
+
+	/**
+	 * Generate custom CSS for font settings.
+	 *
+	 * @return string Custom CSS.
+	 */
+	private function get_custom_font_css() {
+		$settings = get_option( 'hypercart_server_monitor_font_settings', array() );
+		$defaults = array(
+			'timestamp_size'   => '14',
+			'timestamp_weight' => '400',
+			'timestamp_color'  => '#000000',
+			'benchmark_size'   => '14',
+			'benchmark_weight' => '400',
+			'benchmark_color'  => '#000000',
+			'health_size'      => '12',
+			'health_weight'    => '600',
+			'health_healthy'   => '#059669',
+			'health_unhealthy' => '#dc2626',
+		);
+		$s        = wp_parse_args( $settings, $defaults );
+
+			// Defense-in-depth: sanitize settings again at render time.
+			$s['timestamp_size']   = max( 8, min( 32, absint( $s['timestamp_size'] ) ) );
+			$s['benchmark_size']   = max( 8, min( 32, absint( $s['benchmark_size'] ) ) );
+			$s['health_size']      = max( 8, min( 32, absint( $s['health_size'] ) ) );
+			$s['timestamp_weight'] = $this->sanitize_font_weight( $s['timestamp_weight'], $defaults['timestamp_weight'] );
+			$s['benchmark_weight'] = $this->sanitize_font_weight( $s['benchmark_weight'], $defaults['benchmark_weight'] );
+			$s['health_weight']    = $this->sanitize_font_weight( $s['health_weight'], $defaults['health_weight'] );
+			$s['timestamp_color']  = sanitize_hex_color( $s['timestamp_color'] ) ?: $defaults['timestamp_color'];
+			$s['benchmark_color']  = sanitize_hex_color( $s['benchmark_color'] ) ?: $defaults['benchmark_color'];
+			$s['health_healthy']   = sanitize_hex_color( $s['health_healthy'] ) ?: $defaults['health_healthy'];
+			$s['health_unhealthy'] = sanitize_hex_color( $s['health_unhealthy'] ) ?: $defaults['health_unhealthy'];
+
+			$css = "
+			/* Custom Font Settings - Generated from Settings Tab */
+			.hsm-table-timestamp,
+			.hsm-timestamp-value {
+				font-size: {$s['timestamp_size']}px !important;
+			font-weight: {$s['timestamp_weight']} !important;
+			color: {$s['timestamp_color']} !important;
+		}
+		.hsm-table-value {
+			font-size: {$s['benchmark_size']}px !important;
+			font-weight: {$s['benchmark_weight']} !important;
+			color: {$s['benchmark_color']} !important;
+		}
+		.hsm-cron-health,
+		.hsm-table-cron-health {
+			font-size: {$s['health_size']}px !important;
+			font-weight: {$s['health_weight']} !important;
+		}
+		.hsm-cron-health.healthy,
+		.hsm-table-cron-health.healthy {
+			color: {$s['health_healthy']} !important;
+		}
+		.hsm-cron-health.unhealthy,
+		.hsm-table-cron-health.unhealthy {
+			color: {$s['health_unhealthy']} !important;
+		}
+		";
+
+		return $css;
+	}
+
+		/**
+		 * Get the frontend shortcode transient cache key.
+		 *
+		 * @since 0.4.28
+		 * @return string
+		 */
+	private function get_frontend_health_data_transient_key() {
+		$key = self::TRANSIENT_FRONTEND_HEALTH_DATA;
+		if ( function_exists( 'get_current_blog_id' ) ) {
+			$key .= '_' . (int) get_current_blog_id();
+		}
+		return $key;
+	}
+
+		/**
+		 * Sanitize a font-weight value to a strict allowlist.
+		 *
+		 * @since 0.4.28
+		 * @param mixed  $weight  Raw font weight value.
+		 * @param string $default Default value if invalid.
+		 * @return string Sanitized font weight (e.g. "400").
+		 */
+	private function sanitize_font_weight( $weight, $default ) {
+		$allowed = array( '100', '200', '300', '400', '500', '600', '700', '800', '900' );
+
+			$weight = is_scalar( $weight ) ? trim( (string) $weight ) : '';
+			if ( in_array( $weight, $allowed, true ) ) {
+				return $weight;
+			}
+
+			$weight_int = absint( $weight );
+			$weight_str = (string) $weight_int;
+			if ( in_array( $weight_str, $allowed, true ) ) {
+				return $weight_str;
+			}
+
+		return in_array( $default, $allowed, true ) ? $default : '400';
 	}
 
 	/**

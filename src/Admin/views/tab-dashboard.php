@@ -81,11 +81,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<td><?php echo esc_html( number_format( $raw_metrics['benchmark']['avg_time_ms'] ?? 0, 2 ) ); ?> ms</td>
 					</tr>
 					<tr>
-						<td><?php esc_html_e( 'Fastest Run', 'hypercart-server-monitor' ); ?></td>
+						<td><?php esc_html_e( 'Fastest Run', 'hypercart-server-monitor' ); ?> <span style="color: #666; font-size: 0.9em;"><?php esc_html_e( '(last 24 hrs)', 'hypercart-server-monitor' ); ?></span></td>
 						<td><?php echo esc_html( number_format( $raw_metrics['benchmark']['min_time_ms'] ?? 0, 2 ) ); ?> ms</td>
 					</tr>
 					<tr>
-						<td><?php esc_html_e( 'Slowest Run', 'hypercart-server-monitor' ); ?></td>
+						<td><?php esc_html_e( 'Slowest Run', 'hypercart-server-monitor' ); ?> <span style="color: #666; font-size: 0.9em;"><?php esc_html_e( '(last 24 hrs)', 'hypercart-server-monitor' ); ?></span></td>
 						<td><?php echo esc_html( number_format( $raw_metrics['benchmark']['max_time_ms'] ?? 0, 2 ) ); ?> ms</td>
 					</tr>
 					<tr>
@@ -158,6 +158,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<th><?php esc_html_e( 'Run 1 (ms)', 'hypercart-server-monitor' ); ?></th>
 						<th><?php esc_html_e( 'Run 2 (ms)', 'hypercart-server-monitor' ); ?></th>
 						<th><?php esc_html_e( 'Run 3 (ms)', 'hypercart-server-monitor' ); ?></th>
+						<th><?php esc_html_e( 'Total (ms)', 'hypercart-server-monitor' ); ?></th>
 						<th><?php esc_html_e( 'Cron Health', 'hypercart-server-monitor' ); ?></th>
 					</tr>
 				</thead>
@@ -174,6 +175,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 						$time_2 = isset( $times[1] ) ? number_format( $times[1], 2 ) : 'N/A';
 						$time_3 = isset( $times[2] ) ? number_format( $times[2], 2 ) : 'N/A';
 
+						// Calculate total time (sum of all 3 runs).
+						$total_time = 'N/A';
+						if ( isset( $times[0], $times[1], $times[2] ) ) {
+							$total_time = number_format( $times[0] + $times[1] + $times[2], 2 );
+						}
+
 						$cron_health_meta   = $sample['meta']['cron_health'] ?? array();
 						$cron_health_status = is_array( $cron_health_meta ) ? (string) ( $cron_health_meta['status'] ?? '' ) : '';
 						$cron_health_label  = '' !== $cron_health_status ? strtoupper( $cron_health_status ) : 'N/A';
@@ -186,6 +193,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<td><?php echo esc_html( $time_1 ); ?></td>
 							<td><?php echo esc_html( $time_2 ); ?></td>
 							<td><?php echo esc_html( $time_3 ); ?></td>
+							<td><?php echo esc_html( $total_time ); ?></td>
 							<td><span class="hsm-cron-health-status hsm-cron-health-<?php echo esc_attr( $cron_health_class ); ?>"><?php echo esc_html( $cron_health_label ); ?></span></td>
 						</tr>
 					<?php endforeach; ?>

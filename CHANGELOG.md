@@ -5,6 +5,271 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.28] - 2026-03-12
+
+### Fixed
+- **Font Weight Allowlist (CSS Injection Hardening)**: Font weight settings are now validated against an allowlist (100–900) on save and re-sanitized at render time to prevent CSS injection via crafted values.
+- **Admin UI DOM XSS Hardening**: Replaced unsafe `.html()` insertions for server-provided strings with text/DOM-based rendering in admin scripts.
+
+### Added
+- **Frontend Shortcode Cache**: Added a short transient cache for frontend shortcode health-data reads to reduce per-request disk I/O (filterable via `hypercart_server_monitor_frontend_shortcode_cache_ttl`).
+
+## [0.4.27] - 2026-01-31
+
+### Fixed
+- **Live Preview Loading Issue**: Fixed live preview requiring 2-3 page reloads to work.
+  - Moved `updateLivePreview()` function declaration before color picker initialization.
+  - Added `setTimeout()` call to trigger initial preview update after color pickers are initialized (100ms delay).
+  - This ensures the preview table is styled correctly on first page load.
+- **Manual Test Runner Font Styling**: Fixed benchmark values and timestamps not inheriting custom font settings.
+  - Added `hsm-table` class to the dynamically generated table.
+  - Added `hsm-table-timestamp` class to timestamp cells.
+  - Added `hsm-table-value` class to all benchmark value cells (Run 1, Run 2, Run 3, Total).
+  - Changed cron health from `hsm-cron-health-status hsm-cron-health-{class}` to `hsm-cron-health {class}` for consistency.
+- **Shortcode Cron Health Color Inheritance**: Fixed cron health status not inheriting custom color settings on frontend.
+  - Changed from `<td class="hsm-table-cron-health">` to `<td><span class="hsm-cron-health">` to match admin structure.
+  - Updated CSS generators in both `AdminController.php` and `Plugin.php` to target both `.hsm-cron-health` and `.hsm-table-cron-health` classes for backward compatibility.
+  - Added both class selectors to JavaScript live preview function.
+
+### Changed
+- **CSS Selectors**: Updated custom font CSS to target both `.hsm-cron-health` and `.hsm-table-cron-health` classes.
+- **JavaScript**: Improved live preview function to handle both class naming conventions.
+- **Files Modified**: `assets/admin.js`, `src/Admin/views/tab-manual-test.php`, `src/Frontend/views/shortcode-dashboard.php`, `src/Admin/AdminController.php`, `src/Plugin.php`
+
+## [0.4.26] - 2026-01-31
+
+### Added
+- **Font Settings Tab**: New admin settings page for customizing table font appearance.
+  - Font size controls (8-32px) for timestamps, benchmarks, and health status.
+  - Font weight selectors (Light 300, Normal 400, Medium 500, Semi-Bold 600, Bold 700).
+  - Color pickers for timestamps, benchmarks, and health status (separate colors for Healthy/Unhealthy states).
+  - Live preview table showing real-time changes before saving.
+  - Reset to defaults button with confirmation dialog.
+  - Settings saved to WordPress options API (`hypercart_server_monitor_font_settings`).
+- **Dynamic CSS Injection**: Custom font settings applied via inline CSS for performance.
+  - Uses `wp_add_inline_style()` to inject custom CSS based on saved settings.
+  - Applied to both admin dashboard and frontend shortcode.
+  - Maintains DRY principles by using shared CSS architecture.
+- **WordPress Color Picker Integration**: Native WordPress color picker (wpColorPicker) for color selection.
+  - Real-time preview updates as colors are selected.
+  - Hex color validation and sanitization.
+
+### Changed
+- **AdminController.php**: Added Settings tab to admin interface, save handler with sanitization, and CSS generator method.
+- **Plugin.php**: Added CSS generator method and inline CSS injection for frontend shortcode.
+- **admin.js**: Added color picker initialization, live preview function, and reset to defaults functionality.
+- **Enqueue Dependencies**: Added `wp-color-picker` style and script dependencies to admin assets.
+
+### Technical Details
+- Settings stored in single option: `hypercart_server_monitor_font_settings`.
+- Sanitization: `sanitize_hex_color()`, `absint()`, `sanitize_text_field()`.
+- Security: Nonce verification (`wp_verify_nonce()`), capability checks (`current_user_can('manage_options')`).
+- Performance: Inline CSS injection (no additional HTTP requests).
+- Maintainability: Single source of truth for font settings, DRY CSS generation method duplicated in AdminController and Plugin classes.
+- **Files Created**: `src/Admin/views/tab-settings.php`
+- **Files Modified**: `src/Admin/AdminController.php`, `src/Plugin.php`, `assets/admin.js`, `hypercart-server-monitor.php`
+
+## [0.4.25] - 2026-01-31
+
+### Changed
+- **Unified Table CSS**: Created `shared.css` with single source of truth for table styles.
+  - All tables now use 14px font and #000 (pure black) text for consistency.
+  - CSS variables for status colors (excellent/good/warning/critical).
+  - Removed ~160 lines of duplicated CSS between admin and frontend.
+  - Added LLM guidance comments to prevent future CSS complexity creep.
+  - **Files Created**: `assets/shared.css`
+  - **Files Modified**: `assets/admin.css`, `assets/frontend.css`, `src/Admin/AdminController.php`, `src/Plugin.php`
+
+## [0.4.24] - 2026-01-31
+
+### Changed
+- **Improved Readability for Timestamps and Benchmark Values**: Enhanced visibility of critical data.
+  - Increased font size by 20% for all timestamps and benchmark values (14px → 16.8px in admin, 0.875rem → 1.05rem base table, 0.75rem → 0.9rem for specific cells in frontend).
+  - Changed text color to pure black (#000) for better contrast and readability.
+  - Applied to both admin dashboard and frontend shortcode views.
+  - Affects: base table font size, all table cells, timestamp columns, benchmark time values (Run 1, Run 2, Run 3, Total), and metrics tables.
+  - **Files Modified**: `assets/admin.css`, `assets/frontend.css`
+
+## [0.4.23] - 2026-01-31
+
+### Added
+- **Total Column in All Tables**: Added "Total (ms)" column to all Recent Samples tables.
+  - Automatically calculates and displays the sum of Run 1 + Run 2 + Run 3 benchmark times.
+  - Positioned before the Cron Health column for easy comparison.
+  - Provides quick visibility into total execution time across all three benchmark runs.
+  - Applied consistently across Manual Test Runner, Dashboard, and Shortcode views.
+  - **Files Modified**: `src/Admin/views/tab-manual-test.php`, `src/Admin/views/tab-dashboard.php`, `src/Frontend/views/shortcode-dashboard.php`
+
+## [0.4.22] - 2026-01-31
+
+### Changed
+- **Unified Manual Test Runner Display**: Manual test results now use the same table format as Dashboard and Shortcode views.
+  - Displays results in a unified table with columns: Timestamp, Score, Label, Run 1 (ms), Run 2 (ms), Run 3 (ms), Cron Health.
+  - Shows single row with current test results instead of separate metric rows.
+  - Added Cron Health status column to manual test results (was previously missing).
+  - Made `Plugin::determine_cron_health_state()` public to allow reuse in admin AJAX handler.
+  - Reduces confusion by maintaining consistent display format across all views.
+  - **Files Modified**: `src/Admin/views/tab-manual-test.php`, `src/Admin/AdminController.php`, `src/Plugin.php`
+
+## [0.4.21] - 2026-01-31
+
+### Added
+- **Admin Integration Tests**: Lightweight smoke tests for WordPress admin functionality.
+  - Tests admin menu registration, AJAX hooks, capability checks, and asset enqueuing.
+  - Safe to run - no benchmarks executed, no data modified, no emails sent.
+  - Quick execution (< 1 second) - only checks WordPress internal state.
+  - Run via WP-CLI: `wp eval-file tests/run-admin-test.php`
+  - Catches common admin issues: missing hooks, broken capability checks, asset loading failures.
+  - **New Files**: `tests/AdminIntegrationTest.php`, `tests/run-admin-test.php`, `tests/README.md`
+
+### Changed
+- **Darkened Benchmark Metric Labels**: Increased contrast of metric labels from medium grey to dark grey.
+  - Changed color from `#334155` (slate-700) to `#1e293b` (slate-800) - approximately 15% darker.
+  - Improves readability and visual prominence of metric labels.
+  - Affects labels: "Benchmark Time (avg)", "Fastest Run", "Slowest Run", "Iterations".
+  - **Files Modified**: `assets/frontend.css`
+
+- **Darkened Table Timestamps**: Increased contrast of timestamp text in Recent Samples table.
+  - Changed color from `#475569` (slate-600) to `#334155` (slate-700) - approximately 15% darker.
+  - Improves readability of UTC timestamps in the table.
+  - **Files Modified**: `assets/frontend.css`
+
+- **Darkened Benchmark Values in Table**: Increased contrast of benchmark timing values (Benchmark 1, 2, 3).
+  - Changed color from `#475569` (slate-600) to `#334155` (slate-700) - approximately 15% darker.
+  - Improves readability of benchmark timing values in Recent Samples table.
+  - **Files Modified**: `assets/frontend.css`
+
+- **Removed Duplicate Page Title**: Removed hardcoded "Server Health 2026" title from shortcode dashboard.
+  - Eliminates duplicate heading when shortcode is used on a WordPress page that already has a page title.
+  - Keeps "Read-only view" badge for context.
+  - Improves visual hierarchy and reduces redundancy.
+  - **Files Modified**: `src/Frontend/views/shortcode-dashboard.php`
+
+## [0.4.20] - 2026-01-31
+
+### Fixed
+- **Tooltip Cutoff Issue**: Fixed timestamp tooltips in Recent Samples table getting cut off at the top of the viewport.
+  - Changed tooltip positioning from `bottom: 100%` to `top: 100%` to display tooltips below the timestamp instead of above.
+  - Updated arrow direction from `border-top-color` to `border-bottom-color` to match new positioning.
+  - Prevents tooltips from being cut off when table is near the top of the screen.
+  - **Files Modified**: `assets/frontend.css`
+
+### Changed
+- **Benchmark Metric Period Labels**: Added "(last 24 hrs)" labels to "Fastest Run" and "Slowest Run" metrics.
+  - Clarifies that these metrics represent data from the last 24 hours, not all-time records.
+  - Applied to both frontend shortcode dashboard and admin dashboard views.
+  - Improves user understanding of metric scope and data retention period.
+  - **Files Modified**: `src/Frontend/views/shortcode-dashboard.php`, `src/Admin/views/tab-dashboard.php`
+
+- **Removed Duplicate Page Title**: Removed hardcoded "Server Health 2026" title from shortcode dashboard.
+  - Eliminates duplicate heading when shortcode is used on a WordPress page that already has a page title.
+  - Keeps "Read-only view" badge for context.
+  - Improves visual hierarchy and reduces redundancy.
+  - **Files Modified**: `src/Frontend/views/shortcode-dashboard.php`
+
+- **Darkened Benchmark Metric Labels**: Increased contrast of metric labels from medium grey to dark grey.
+  - Changed color from `#334155` (slate-700) to `#1e293b` (slate-800) - approximately 15% darker.
+  - Improves readability and visual prominence of metric labels.
+  - Affects labels: "Benchmark Time (avg)", "Fastest Run", "Slowest Run", "Iterations".
+  - **Files Modified**: `assets/frontend.css`
+
+- **Darkened Table Timestamps**: Increased contrast of timestamp text in Recent Samples table.
+  - Changed color from `#475569` (slate-600) to `#334155` (slate-700) - approximately 15% darker.
+  - Improves readability of UTC timestamps in the table.
+  - **Files Modified**: `assets/frontend.css`
+
+- **Darkened Benchmark Values in Table**: Increased contrast of benchmark timing values (Benchmark 1, 2, 3).
+  - Changed color from `#475569` (slate-600) to `#334155` (slate-700) - approximately 15% darker.
+  - Improves readability of benchmark timing values in Recent Samples table.
+  - **Files Modified**: `assets/frontend.css`
+
+## [0.4.19] - 2026-01-30
+
+### Fixed
+- **State Transition Lock Failure Handling**: Added return value checks for all `transition_to()` calls in the main run flow.
+  - Previously, state transitions could silently fail when the state lock couldn't be acquired, causing the run to proceed with stale state.
+  - Now logs warnings when state transitions fail due to lock acquisition failures.
+  - Improves observability and debugging of state synchronization issues.
+  - **Files Modified**: `src/Plugin.php`
+
+- **Probe Failure Lock Failure Handling**: Added fallback error handling when `record_probe_failure()` fails to acquire lock.
+  - Previously, if the lock was stuck during a probe failure, the failure/trip record could be lost entirely.
+  - Now falls back to `transition_to('error')` when `record_probe_failure()` returns false.
+  - Ensures circuit breaker failures are always recorded even if lock acquisition fails.
+  - **Files Modified**: `src/Plugin.php`
+
+## [0.4.18] - 2026-01-30
+
+### Performance
+- **AJAX Timeout Handling**: Added explicit 10-second timeout to cron health AJAX calls and 15-second timeout to breaker self-test AJAX calls.
+  - Timeout-specific error messages now displayed to users when requests exceed time limits.
+  - Improves robustness and user feedback per AGNETS.md guidelines.
+  - **Files Modified**: `assets/admin.js`
+
+- **Optimized FSM State Reads**: Refactored `run_breaker_self_test()` to reduce redundant database reads.
+  - Reduced redundant `get_option()` calls from 7 to 5 per self-test execution.
+  - Re-reads state from database after each state-changing operation to ensure correctness.
+  - Improves performance while maintaining state integrity and aligns with AGNETS.md "minimize DB calls" guidance.
+  - **Files Modified**: `src/Domain/FsmStateStore.php`
+
+### Changed
+- **Modern Clipboard API**: Replaced deprecated `document.execCommand('copy')` with async `navigator.clipboard.writeText()`.
+  - Graceful fallback to `execCommand` for older browsers that don't support the Clipboard API.
+  - Eliminates use of deprecated DOM manipulation for clipboard operations.
+  - **Files Modified**: `assets/admin.js`
+
+## [0.4.17] - 2026-01-30
+
+### Added
+- **Email Notifications Toggle**: Added checkbox switch to enable/disable automatic email notifications.
+  - Modern toggle switch in Email tab with visual on/off state (enabled/disabled).
+  - Setting saved via AJAX with nonce verification for security.
+  - Default state: Enabled (maintains backward compatibility).
+  - Real-time feedback with success/error messages displayed below toggle.
+  - Monitoring flow checks setting before sending emails (respects user preference).
+  - Option stored in WordPress options table: `hypercart_server_monitor_email_notifications_enabled`.
+  - **Files Modified**: `src/Plugin.php`, `src/Admin/views/tab-email.php`, `src/Admin/AdminController.php`, `assets/admin.js`, `hypercart-server-monitor.php`
+
+### Changed
+- **Email Tab Description**: Updated from "Email notifications are sent automatically every 15 minutes after each benchmark run" to "Configure automatic email notifications sent after each benchmark run."
+- **Monitoring Flow**: `run_monitoring()` method now checks email notifications setting before sending emails (line 348 in Plugin.php).
+
+### Technical Details
+- **AJAX Handler**: New `ajax_toggle_email_notifications()` method in AdminController with proper nonce verification and capability checks.
+- **JavaScript**: Toggle switch handler in `assets/admin.js` with visual feedback, error handling, and automatic state reversion on failure.
+- **CSS**: Modern toggle switch styling with smooth transitions, disabled states, and WordPress admin color scheme integration.
+- **Security**: Nonce verification (`hsm_toggle_email_notifications`), capability check (`manage_options`), input sanitization (strict '1'/'0' validation).
+- **Logging**: All toggle changes logged with user information for audit trail.
+- **Default Behavior**: If option doesn't exist, defaults to '1' (enabled) to maintain backward compatibility with existing installations.
+
+## [0.4.16] - 2026-01-30
+
+### Added
+- **Pagination Controls for Frontend Dashboard**: Implemented performant, secure pagination for the Recent Samples table.
+  - URL-based pagination using `hsm_page` query parameter for better SEO and browser history support.
+  - Shows 10 samples per page with intelligent page number display (ellipsis for large page counts).
+  - Displays "Showing X-Y of Z samples" information for user clarity.
+  - First/Previous/Next/Last navigation buttons with proper disabled states.
+  - Smart page number display: shows all pages if 7 or fewer, otherwise shows first, last, current, and 2 pages on each side of current.
+  - Input sanitization: page number is validated and clamped to valid range (1 to total_pages).
+  - Modern, accessible design matching the existing slate color palette with blue accent for current page.
+  - Fully responsive with mobile-optimized layout and touch-friendly button sizes.
+  - Screen reader support with ARIA labels (`aria-current`, `aria-disabled`) and semantic HTML.
+  - Smooth hover effects and active states for better UX.
+  - **Files Modified**: `src/Frontend/views/shortcode-dashboard.php`, `assets/frontend.css`
+
+### Changed
+- **Frontend Dashboard Description**: Updated Recent Samples card description to show current page info (e.g., "Page 1 of 5 (48 total samples)").
+- **Table ID**: Added `id="hsm-samples-table"` to the samples table for potential future JavaScript enhancements.
+
+### Technical Details
+- **Performance**: No database queries - pagination operates on in-memory array from JSON file (24h of samples, typically 96 entries).
+- **Security**: Input sanitization using PHP's `(int)` casting and `max()`/`min()` clamping to prevent invalid page numbers.
+- **Accessibility**: Full ARIA support, screen reader text for navigation buttons, semantic navigation structure.
+- **SEO**: URL-based pagination allows search engines to discover and index historical data pages.
+- **Browser Compatibility**: Uses standard HTML/CSS, no JavaScript required for core functionality.
+- **Design System**: Matches existing Tailwind-inspired slate color palette (#f8fafc, #e2e8f0, #cbd5e1, #94a3b8, #64748b, #475569, #1e293b) with blue accent (#3b82f6) for active page.
+
 ## [0.4.15] - 2026-01-28
 
 ### Added
