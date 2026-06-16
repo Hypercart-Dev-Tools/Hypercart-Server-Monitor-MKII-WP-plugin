@@ -103,7 +103,12 @@ add_action( 'admin_notices', 'hypercart_server_monitor_version_mismatch_notice' 
 // Don't return - allow plugin to load with degraded functionality.
 }
 
-// Log plugin initialization.
+// Log plugin initialization only once per version change. This function runs
+// on every request (plugins_loaded), so logging unconditionally spams the log
+// with one INFO line per page view, AJAX call, heartbeat and cron ping.
+// Recording it only on install/upgrade keeps the diagnostic value without noise.
+$last_logged_version = get_option( 'hypercart_server_monitor_last_init_version' );
+if ( HYPERCART_SERVER_MONITOR_VERSION !== $last_logged_version ) {
 Hypercart_Logger::info(
 'hypercart-server-monitor',
 'Plugin initializing',
@@ -113,6 +118,10 @@ array(
 'wp_version' => get_bloginfo( 'version' ),
 )
 );
+// Non-autoloaded: this is internal bookkeeping read only inside init(), so it
+// need not sit in the alloptions cache on every request (matches FsmStateStore).
+update_option( 'hypercart_server_monitor_last_init_version', HYPERCART_SERVER_MONITOR_VERSION, false );
+}
 
 // Initialize plugin.
 Hypercart_Server_Monitor\Plugin::get_instance();
