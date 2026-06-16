@@ -98,14 +98,6 @@ class Plugin {
 		// Register hooks.
 		$this->register_hooks();
 
-		// Log initialization.
-		\Hypercart_Logger::debug(
-			'hypercart-server-monitor',
-			'Plugin initialized',
-			array(
-				'state' => $this->state_store->get_current_state(),
-			)
-		);
 	}
 
 	/**
