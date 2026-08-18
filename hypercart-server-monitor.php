@@ -3,7 +3,7 @@
  * Plugin Name: Hypercart Server Monitor MKII
  * Plugin URI: https://github.com/yourusername/wp-server-performance-monitor
  * Description: Monitors server health (CPU, Memory, Disk) every 15 minutes with email alerts and admin dashboard. Requires Hypercart Helper.
-	 * Version: 0.4.28
+	 * Version: 0.4.29
  * Author: Hypercart DBA Neochrome
  * Author URI: https://hypercart.io
  * License: GPL v2 or later
@@ -22,7 +22,7 @@ exit;
 }
 
 // Define plugin constants.
-		define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.4.28' );
+		define( 'HYPERCART_SERVER_MONITOR_VERSION', '0.4.29' );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_FILE', __FILE__ );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HYPERCART_SERVER_MONITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -101,26 +101,6 @@ if ( defined( 'HYPERCART_HELPER_VERSION' ) &&
      ( ! class_exists( 'Hypercart_Admin_Tabs' ) || ! class_exists( 'Hypercart_Charts' ) ) ) {
 add_action( 'admin_notices', 'hypercart_server_monitor_version_mismatch_notice' );
 // Don't return - allow plugin to load with degraded functionality.
-}
-
-// Log plugin initialization only once per version change. This function runs
-// on every request (plugins_loaded), so logging unconditionally spams the log
-// with one INFO line per page view, AJAX call, heartbeat and cron ping.
-// Recording it only on install/upgrade keeps the diagnostic value without noise.
-$last_logged_version = get_option( 'hypercart_server_monitor_last_init_version' );
-if ( HYPERCART_SERVER_MONITOR_VERSION !== $last_logged_version ) {
-Hypercart_Logger::info(
-'hypercart-server-monitor',
-'Plugin initializing',
-array(
-'version' => HYPERCART_SERVER_MONITOR_VERSION,
-'php_version' => PHP_VERSION,
-'wp_version' => get_bloginfo( 'version' ),
-)
-);
-// Non-autoloaded: this is internal bookkeeping read only inside init(), so it
-// need not sit in the alloptions cache on every request (matches FsmStateStore).
-update_option( 'hypercart_server_monitor_last_init_version', HYPERCART_SERVER_MONITOR_VERSION, false );
 }
 
 // Initialize plugin.

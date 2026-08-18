@@ -98,14 +98,6 @@ class Plugin {
 		// Register hooks.
 		$this->register_hooks();
 
-		// Log initialization.
-		\Hypercart_Logger::debug(
-			'hypercart-server-monitor',
-			'Plugin initialized',
-			array(
-				'state' => $this->state_store->get_current_state(),
-			)
-		);
 	}
 
 	/**
@@ -824,6 +816,9 @@ class Plugin {
 		// Unschedule cron event.
 		$scheduler = new Services\SchedulerService();
 		$scheduler->unschedule();
+
+		// Clean up orphaned option from removed per-request init logging.
+		delete_option( 'hypercart_server_monitor_last_init_version' );
 
 		\Hypercart_Logger::info(
 			'hypercart-server-monitor',
