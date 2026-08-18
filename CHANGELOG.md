@@ -5,6 +5,14 @@ All notable changes to Hypercart Server Monitor MKII will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.29] - 2026-08-18
+
+### Removed
+- **Per-request init logging**: Removed `get_option()` version-gate check and `Hypercart_Logger::debug('Plugin initialized')` call that both fired on every `plugins_loaded` (~691k log entries/day on production). The activation hook already logs version/PHP/WP info; no per-request check is needed.
+
+### Fixed
+- **Orphaned option cleanup**: `hypercart_server_monitor_last_init_version` is now deleted on plugin deactivation. The option was written by the removed init-logging code and is no longer read.
+
 ## [0.4.28] - 2026-03-12
 
 ### Fixed

@@ -817,6 +817,9 @@ class Plugin {
 		$scheduler = new Services\SchedulerService();
 		$scheduler->unschedule();
 
+		// Clean up orphaned option from removed per-request init logging.
+		delete_option( 'hypercart_server_monitor_last_init_version' );
+
 		\Hypercart_Logger::info(
 			'hypercart-server-monitor',
 			'Plugin deactivation complete',
